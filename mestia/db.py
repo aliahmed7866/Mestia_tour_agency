@@ -178,6 +178,8 @@ def init_db(conn):
     from .business_content import apply_guide_profile, apply_owner_content
     apply_owner_content(conn)
     apply_guide_profile(conn)
+    from .offers import initialize_offer
+    initialize_offer(conn)
     from .offering_presets import apply_offering_presets
     apply_offering_presets(conn)
 
@@ -190,6 +192,7 @@ def migrate_enquiry_preferences(conn):
         for name, definition in (
             ('requested_date', "TEXT NOT NULL DEFAULT ''"),
             ('requested_time', "TEXT NOT NULL DEFAULT ''"),
+            ('bundle_request', "TEXT NOT NULL DEFAULT ''"),
             ('timing_pending', 'INTEGER NOT NULL DEFAULT 0 CHECK(timing_pending IN (0,1))'),
         ):
             if name not in columns:
@@ -202,7 +205,9 @@ def migrate_enquiry_preferences(conn):
 
 def seed_defaults(conn):
     """Basic settings and owner provider; supplied content is applied separately."""
+    from .offers import DEFAULT_TERMS
     defaults = {
+        'stay_tour_enabled': '1', 'stay_tour_percent': '10', 'stay_tour_terms': DEFAULT_TERMS,
         'business_name': 'Mestia Travel', 'business_name_ka': '',
         'whatsapp_number': '', 'contact_email': '', 'address': '',
         'operating_hours': '', 'response_note': '', 'currency': 'GEL',

@@ -25,6 +25,7 @@ from .catalogue import (MONTH_CHOICES, SERVICE_TEXT_FIELDS, research_checked,
                         research_sources, season_months)
 from .security import csrf_token, validate_csrf, check_password, verify_totp, rate_limit
 from .seo import build_metadata, service_url, sitemap_entries
+from .offers import current_offer, snapshot, apply_to_quote
 
 TBILISI = ZoneInfo('Asia/Tbilisi')
 KINDS = {'tour', 'stay', 'taxi', 'combined'}
@@ -162,7 +163,7 @@ def enquiry_input(form, source='website'):
     for value in ids[:10]:
         if not value.strip():
             continue
-        service = row('SELECT id,title_en,kind,duration_days FROM services WHERE id=? AND published=1 AND archived_at IS NULL', (integer(value),))
+        service = row('SELECT id,title_en,kind,duration_days,provider_id FROM services WHERE id=? AND published=1 AND archived_at IS NULL', (integer(value),))
         if not service:
             raise ValueError('That trip is no longer taking requests. Please choose another.')
         if kind != 'combined' and service['kind'] != kind:
@@ -231,6 +232,23 @@ def enquiry_input(form, source='website'):
                 service_id=selected[0]['id'] if selected else None,
                 idempotency_key=form.get('request_key') or secrets.token_urlsafe(24))
     data.update(preferences)
+    if form.get('add_stay') == 'on':
+        offer = current_offer(get_db(), settings_data())
+        if not quick or kind != 'tour' or len(selected) != 1 or selected[0]['provider_id'] != 1 or not offer['enabled']:
+            raise ValueError('This stay-and-tour offer is not available for that request. Please review your selection.')
+        try:
+            arrival = datetime.strptime(form.get('bundle_check_in', ''), '%Y-%m-%d').date()
+            departure = datetime.strptime(form.get('bundle_check_out', ''), '%Y-%m-%d').date()
+            travel = datetime.strptime(preferences['requested_date'], '%Y-%m-%d').date()
+        except (ValueError, KeyError):
+            raise ValueError('Choose check-in and check-out dates for your guesthouse stay.') from None
+        last_day = travel + timedelta(days=max(1, selected[0]['duration_days'] or 1) - 1)
+        if arrival < datetime.now(TBILISI).date() or departure <= arrival or not arrival <= travel <= last_day <= departure:
+            raise ValueError('Choose a future stay of at least one night with your tour date between check-in and check-out.')
+        bundle = dict(percent=offer['percent'], terms=offer['terms'], stay_id=offer['stay']['id'],
+                      check_in=arrival.isoformat(), check_out=departure.isoformat())
+        data['bundle_request'] = json.dumps(bundle)
+        data['notes'] = (f"Stay & explore requested: {offer['percent']}% off eligible tour service. Riverside stay {arrival} to {departure} for the same {data['party_size']} guests.\n" + data['notes'])[:4000]
     if kind == 'taxi' and (not data['pickup'].strip() or not data['destination'].strip()):
         raise ValueError('Pickup and destination are required for a taxi.')
     return data
@@ -288,7 +306,7 @@ def register_routes(app):
     @app.context_processor
     def context():
         data = settings_data()
-        return dict(settings=data, destination_slides=get_destination_slides(data),
+        return dict(settings=data, stay_offer=current_offer(get_db(), data), destination_slides=get_destination_slides(data),
                     lang=g.get('lang', 'en'), user=g.get('user'),
                     seo_metadata=build_metadata, service_url=service_url,
                     csrf_token=csrf_token, tr=lambda en, ka: ka if g.get('lang') == 'ka' else en)
@@ -307,7 +325,7 @@ def register_routes(app):
             response.headers['X-Robots-Tag'] = 'noindex, nofollow'
         elif not app.config['INDEXING_ENABLED']:
             response.headers['X-Robots-Tag'] = 'noindex, nofollow'
-        elif request.endpoint == 'services' and any(request.args.get(k) for k in ('region', 'activity', 'duration', 'month')):
+        elif request.endpoint == 'services' and any(request.args.get(k) for k in ('region', 'activity', 'duration', 'month', 'q', 'difficulty')):
             response.headers['X-Robots-Tag'] = 'noindex, follow'
         if response.mimetype == 'text/html':
             response.headers['Content-Language'] = g.get('lang', 'en')
@@ -370,7 +388,8 @@ def register_routes(app):
 
     @app.get('/')
     def home():
-        return render_template('home.html', services=rows("SELECT * FROM services WHERE published=1 AND archived_at IS NULL ORDER BY CASE WHEN itinerary_en<>'' THEN 0 ELSE 1 END,id DESC LIMIT 6"))
+        return render_template('home.html', services=rows("SELECT * FROM services WHERE published=1 AND archived_at IS NULL ORDER BY CASE WHEN itinerary_en<>'' THEN 0 ELSE 1 END,id DESC LIMIT 6"),
+                               mood_trips=rows("SELECT * FROM services WHERE published=1 AND archived_at IS NULL AND preset_key IN ('svaneti-ushguli-day-v1','svaneti-koruldi-4x4-v1','svaneti-chalaadi-v1') ORDER BY id DESC"))
 
     @app.get('/services')
     def services():
@@ -381,12 +400,22 @@ def register_routes(app):
         activity = request.args.get('activity', '').strip()
         duration = request.args.get('duration', '')
         month = request.args.get('month', '')
+        search = request.args.get('q', '').strip()
+        difficulty = request.args.get('difficulty', '').strip()
+        if len(search) > 100 or len(difficulty) > 200:
+            abort(400, description='Keep search and difficulty filters short.')
         if len(region) > 150 or len(activity) > 100 or duration not in {'', 'day', 'multi'}:
             abort(400, description='Choose valid catalogue filters.')
         if month and not re.fullmatch(r'(?:[1-9]|1[0-2])', month):
             abort(400, description='Choose a month between 1 and 12.')
         query = 'SELECT * FROM services WHERE published=1 AND archived_at IS NULL'
         params = []
+        if search:
+            query += " AND (instr(lower(title_en),lower(?))>0 OR instr(lower(description_en),lower(?))>0 OR instr(title_ka,?)>0)"
+            params += [search, search, search]
+        if difficulty:
+            query += ' AND difficulty=?'
+            params.append(difficulty)
         if kind:
             query += ' AND kind=?'
             params.append(kind)
@@ -403,6 +432,8 @@ def register_routes(app):
         regions = [record['region'] for record in rows("SELECT DISTINCT region FROM services WHERE published=1 AND archived_at IS NULL AND region<>'' ORDER BY region")]
         activities = [record['activity'] for record in rows("SELECT DISTINCT activity FROM services WHERE published=1 AND archived_at IS NULL AND activity<>'' ORDER BY activity")]
         return render_template('services.html', services=data, kind=kind,
+                               search_query=search, selected_difficulty=difficulty,
+                               difficulty_choices=[r['difficulty'] for r in rows("SELECT DISTINCT difficulty FROM services WHERE published=1 AND archived_at IS NULL AND difficulty<>'' ORDER BY difficulty")],
                                selected_region=region, selected_activity=activity,
                                selected_duration=duration, selected_month=month,
                                regions=regions, activities=activities,
@@ -492,6 +523,7 @@ def register_routes(app):
     @app.get('/booking/<token>')
     def status(token):
         e = guest_enquiry(token)
+        e['bundle'] = snapshot(e.get('bundle_request'))
         q = row('SELECT * FROM quotes WHERE enquiry_id=? ORDER BY version DESC LIMIT 1', (e['id'],))
         b = row('SELECT * FROM bookings WHERE enquiry_id=? ORDER BY id DESC LIMIT 1', (e['id'],))
         items = rows('SELECT * FROM quote_items WHERE quote_id=?', (q['id'],)) if q else []
@@ -631,10 +663,13 @@ def quote_input(e):
     currency = f.get('currency', 'GEL').strip().upper()
     if not re.fullmatch('[A-Z]{3}', currency):
         raise ValueError('Use a three-letter currency code, for example GEL.')
+    offer_terms = ''
+    if f.get('apply_stay_offer') == 'on':
+        offer_terms = apply_to_quote(get_db(), items, snapshot(e.get('bundle_request')), currency)
     return dict(items=items, allocations=allocations, currency=currency,
                 expires_at=scheduled(f.get('expires_local'), 'Quote expiry'),
                 deposit_required_minor=money(f.get('deposit'), 'Deposit'),
-                terms=required(f.get('terms'), 'Quote and cancellation terms', 20000),
+                terms=required(f.get('terms'), 'Quote and cancellation terms', 20000) + offer_terms,
                 policy_version=required(f.get('policy_version'), 'Policy version', 100))
 
 
@@ -708,6 +743,7 @@ def register_admin(app):
         e = row('SELECT * FROM enquiries WHERE id=?', (identifier,))
         if not e:
             abort(404)
+        e['bundle'] = snapshot(e.get('bundle_request'))
         quotes = rows('SELECT * FROM quotes WHERE enquiry_id=? ORDER BY version DESC', (identifier,))
         q = domain.get_quote(get_db(), quotes[0]['id']) if quotes else None
         bookings = rows('SELECT * FROM bookings WHERE enquiry_id=? ORDER BY id DESC', (identifier,))
@@ -1036,10 +1072,14 @@ def register_admin(app):
         if request.method=='POST':
             try:
                 f=request.form
-                allowed=['business_name','whatsapp_number','contact_email','address','operating_hours','response_note','about_en','about_ka','booking_terms','privacy_notice','policy_version','whatsapp_link','guesthouse_name','guesthouse_instagram_url','guide_instagram_url']
+                allowed=['business_name','whatsapp_number','contact_email','address','operating_hours','response_note','about_en','about_ka','booking_terms','privacy_notice','policy_version','whatsapp_link','guesthouse_name','guesthouse_instagram_url','guide_instagram_url','stay_tour_enabled','stay_tour_percent','stay_tour_terms']
                 current = settings_data()
                 values={key:f.get(key,current.get(key,'')).strip()[:20000] for key in allowed}
                 required(values['business_name'],'Business name',200)
+                if values['stay_tour_enabled'] not in ('0', '1'):
+                    raise ValueError('Choose whether the stay-and-tour offer is enabled.')
+                values['stay_tour_percent'] = str(integer(values['stay_tour_percent'], 'Tour discount percentage', 1, 100))
+                values['stay_tour_terms'] = required(values['stay_tour_terms'], 'Stay-and-tour offer terms', 5000)
                 if values['whatsapp_number'] and not re.fullmatch(r'[1-9][0-9]{6,14}',values['whatsapp_number']):
                     raise ValueError('WhatsApp number must include country code and digits only, without + or spaces.')
                 values['whatsapp_link'] = whatsapp_business_link(values['whatsapp_link'])

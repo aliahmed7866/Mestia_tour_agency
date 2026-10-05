@@ -13,7 +13,7 @@ from flask import current_app, g, request
 
 
 PUBLIC_ENDPOINTS = frozenset({'home', 'services', 'service_detail', 'info', 'travel_guide', 'faq'})
-FACETS = frozenset({'region', 'activity', 'duration', 'month'})
+FACETS = frozenset({'region', 'activity', 'duration', 'month', 'q', 'difficulty'})
 KINDS = frozenset({'tour', 'stay', 'taxi'})
 SOCIAL_IMAGE = '/static/social-card.png'
 

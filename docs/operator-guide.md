@@ -82,3 +82,18 @@ The website now includes the supplied card's five service categories and Riversi
 Settings accepts either a full international WhatsApp number (country code and digits only) or the supplied QR business link. A configured number takes priority: activity links prefill the activity title and page link, and guest status links prefill the request reference. Guests can edit the message in WhatsApp before sending. With only the QR link, activity pages show an editable message with **Copy message** and **Open WhatsApp** controls; guests paste it into the chat themselves. Status pages show the reference to include manually. None of these controls sends a message.
 
 The guesthouse and guide Instagram fields are separate and contain the supplied `riverside_svaneti` and `guledaniakaki` profiles. Update them in Settings if those profiles change.
+
+## Stay & explore promotion
+
+In **Settings → Stay & explore offer**, enable/disable the promotion, change the
+percentage (initially 10%) and edit its public terms. Only an owner-operated
+tour bundled with Riverside for the same guests and visit qualifies. Rooms,
+transfers and extras are excluded; price extras separately.
+
+Guests choose a tour, expand the optional stay offer and enter stay dates.
+The request saves the rate and terms in force then. In the quote editor,
+review the suggested tour/stay items, enter original prices and actual dates,
+and leave **Apply the requested saving** checked. The server calculates the
+tour saving and records it in the quote. If the stay is unavailable, uncheck
+the offer and explain the revised quote. Existing requests and quotes do not
+change when you edit the promotion. See [UX review and offer rules](ui-research.md).

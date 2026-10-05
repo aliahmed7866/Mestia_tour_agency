@@ -15,8 +15,9 @@
   {% if seo.structured_data %}<script type="application/ld+json" nonce="{{ g.csp_nonce }}">{{ seo.structured_data|tojson }}</script>{% endif %}
   <link rel="icon" href="/static/mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/style.css">
-  <script src="/static/app.js" defer></script>
+  <script src="/static/app.js?v=20261005-offer" defer></script>
   {% block head %}{% endblock %}
+  {% if not request.path.startswith('/admin') %}<link rel="stylesheet" href="/static/adventure.css?v=20261005-offer">{% endif %}
 </head>
 <body>
   <a class="skip-link" href="#main">{{ tr('Skip to content', 'შინაარსზე გადასვლა') }}</a>
@@ -33,7 +34,7 @@
       <a href="/services?kind=taxi&amp;lang={{ lang }}">{{ tr('Taxi & transfers', 'ტაქსი და ტრანსფერი') }}</a>
       <a href="/visit-svaneti?lang={{ lang }}">{{ tr('Plan Svaneti', 'დაგეგმეთ სვანეთი') }}</a>
       <a href="{{ url_for('faq', lang=lang) }}">{{ tr('FAQs', 'კითხვები') }}</a>
-      <a class="language-link" href="{{ request.path }}?lang={{ 'ka' if lang == 'en' else 'en' }}{% for param in ['kind','service_id','region','activity','duration','month'] %}{% if request.args.get(param) %}&amp;{{ param }}={{ request.args.get(param)|urlencode }}{% endif %}{% endfor %}" lang="{{ 'ka' if lang == 'en' else 'en' }}" aria-label="{{ 'Switch to Georgian' if lang == 'en' else 'Switch to English' }}">{{ 'ქარ' if lang == 'en' else 'EN' }}</a>
+      <a class="language-link" href="{{ request.path }}?lang={{ 'ka' if lang == 'en' else 'en' }}{% for param in ['kind','service_id','region','activity','duration','month','q','difficulty','bundle'] %}{% if request.args.get(param) %}&amp;{{ param }}={{ request.args.get(param)|urlencode }}{% endif %}{% endfor %}" lang="{{ 'ka' if lang == 'en' else 'en' }}" aria-label="{{ 'Switch to Georgian' if lang == 'en' else 'Switch to English' }}">{{ 'ქარ' if lang == 'en' else 'EN' }}</a>
       <a class="button button-small" href="/services?lang={{ lang }}">{{ tr('Browse trips', 'აირჩიეთ ტური') }} <span aria-hidden="true">↗</span></a>
     </nav>
   </header>

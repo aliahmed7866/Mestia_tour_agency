@@ -1,6 +1,28 @@
 "use strict";
 document.documentElement.classList.add("js");
 
+const stayChoice = document.querySelector('[data-add-stay]');
+if (stayChoice) {
+  const dates = document.querySelector('[data-stay-dates]');
+  const arrival = dates.querySelector('[name=bundle_check_in]');
+  const departure = dates.querySelector('[name=bundle_check_out]');
+  const updateStay = () => {
+    dates.hidden = !stayChoice.checked;
+    dates.querySelectorAll('input').forEach(input => {
+      input.disabled = !stayChoice.checked;
+      input.required = stayChoice.checked;
+    });
+    if (arrival.value) {
+      const next = new Date(`${arrival.value}T12:00:00Z`);
+      next.setUTCDate(next.getUTCDate() + 1);
+      departure.min = next.toISOString().slice(0, 10);
+    } else departure.removeAttribute('min');
+  };
+  stayChoice.addEventListener('change', updateStay);
+  arrival.addEventListener('change', updateStay);
+  updateStay();
+}
+
 const menuButton = document.querySelector(".menu-toggle");
 const navigation = document.querySelector("#site-nav");
 if (menuButton && navigation) {

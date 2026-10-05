@@ -200,5 +200,5 @@ def test_additive_migration_preserves_legacy_rows(tmp_path):
     migrate_enquiry_preferences(conn)
     enquiry = dict(conn.execute('SELECT * FROM enquiries').fetchone())
     assert enquiry == dict(id=1, name='Existing guest', starts_at='2035-07-15T09:00:00Z',
-                           requested_date='', requested_time='', timing_pending=0)
+                           requested_date='', requested_time='', timing_pending=0, bundle_request='')
     conn.close()

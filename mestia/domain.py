@@ -187,11 +187,11 @@ def create_enquiry(conn, data, actor_id=None):
                   _text(data.get('pickup'), 'Pickup', 400), _text(data.get('destination'), 'Destination', 400),
                   _text(data.get('luggage'), 'Luggage', 400), _text(data.get('notes'), 'Notes', 4000),
                   _text(data.get('source', 'website'), 'Source', 80), 'ka' if data.get('language') == 'ka' else 'en', stamp, stamp,
-                  requested_date, requested_time, timing_pending)
+                  requested_date, requested_time, timing_pending, _text(data.get('bundle_request'), 'Stay offer', 10000))
         cursor = conn.execute('''INSERT INTO enquiries(reference,token_hash,token_expires_at,idempotency_key,
             kind,service_id,name,email,phone,starts_at,ends_at,party_size,pickup,destination,luggage,notes,source,language,created_at,updated_at,
-            requested_date,requested_time,timing_pending)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', fields)
+            requested_date,requested_time,timing_pending,bundle_request)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', fields)
         audit(conn, 'enquiry.created', 'enquiry', cursor.lastrowid, {'source': fields[16]}, actor_id)
         result = _row(conn, 'enquiries', cursor.lastrowid)
         result['guest_token'] = token

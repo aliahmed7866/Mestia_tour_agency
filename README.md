@@ -87,3 +87,12 @@ bash scripts/test.sh
 See the [operator guide](docs/operator-guide.md) for first setup and daily booking work, [deployment guide](docs/termux.md) for HTTPS, backups and recovery, and [scope decisions](docs/decisions.md) for owner inputs and deferred work.
 
 The database, uploads and secret stay on the device unless you arrange a protected off-device backup. Termux is practical for a pilot, but Android can stop its processes and a phone is not an always-on hosting service. Public HTTPS, a domain, monitoring and off-device backups are deployment responsibilities; this repository does not provision them.
+
+### Discovery and stay offer
+
+The homepage now offers destination search and illustrated route choices. The
+catalogue supports effort as well as region, duration, activity and season.
+Guests can add Riverside dates to a tour request for a 10% tour-service saving.
+The owner controls the rate, terms and visibility in Settings; eligible quote
+items are checked and discounted on the server. Rooms and extras are excluded.
+Read the [source-informed UX review and offer workflow](docs/ui-research.md).

@@ -2,7 +2,7 @@
 
 Implementation checked in the development Linux environment on 5 October 2026.
 
-- 189 automated tests pass, covering booking operations, security, backup restoration, content upgrades, catalogue lifecycle, short booking requests, cloud configuration and public SEO.
+- 208 automated tests pass, covering booking operations, security, backup restoration, content upgrades, catalogue lifecycle, short booking requests, cloud configuration and public SEO.
 - Checks include concurrent final-room allocation, whole room-night boundaries, shared-person and vehicle conflicts, travel buffers, expired holds and driver offers, stale quote acceptance, pending/verified/voided payments, refund limits, quote snapshots, guest links and rotation, taxi acceptance and reassignment, staff access restrictions, TOTP replay prevention, CSRF and backup restoration.
 - Public and admin templates render through the Flask test client. All three JavaScript files pass Node syntax checks; shell scripts pass Bash syntax checks.
 - An isolated Linux setup smoke test confirmed random secret creation, restrictive file permissions, setup rerun data preservation and ZIP backup creation.
@@ -45,3 +45,14 @@ The enquiry JavaScript passed 108 jsdom assertions against Flask-rendered forms:
 The discovery redesign rendered all 25 saved offerings in staff preview in English and Georgian, 50 public detail pages after isolated publication, and 12 homepage/catalogue combinations. All 11 referenced local static assets returned HTTP 200. Draft previews do not expose a selected-service enquiry action, and operator notes and research sources remain private.
 
 The SEO and hosting preparation checks unique public metadata, configured-origin canonicals under hostile Host headers, stable language URLs, legacy/renamed-slug redirects, sitemap publication/deletion behavior, private/error noindex responses, safe JSON-LD serialization and CSP nonces, cookie-free cached assets and disabled indexing before configuration. Cloud checks cover WAL/DELETE validation, unchanged owner configuration and secrets on setup reruns, portable backup/restore of records and media, and the secure WSGI entry point. The social preview illustration was rasterized to a 1200×630 PNG and visually checked. These results do not establish that a hosting account, domain, DNS, Search Console property or live deployment exists; those remain account-owner steps.
+
+The discovery/offer update adds checks for server-controlled promotion rates,
+invalid or unavailable stays, tour/stay date matching, partner exclusion,
+per-unit minor-currency rounding, unchanged room/transfer prices, saved quote
+immutability and owner promotion controls. Search and effort filters remain
+public-only and noindex; quick homepage choices follow current owner content
+and publication. DOM checks passed for optional stay controls, dates crossing
+month boundaries, form payloads, retained selections and bundle navigation.
+A real Chromium render was attempted again, but the process exited with SIGTRAP
+before opening a page; no browser screenshot or Android visual verification is
+claimed for this update.
