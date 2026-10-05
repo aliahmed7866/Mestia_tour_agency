@@ -1,0 +1,39 @@
+# PAID deployment: 0.5 CPU / 512 MB service plus a 1 GB persistent disk.
+# Review Render's current price before accepting the Blueprint creation screen.
+# Never change this to plan: free: this app requires a persistent SQLite disk.
+services:
+  - type: web
+    name: mestia-travel
+    runtime: python
+    plan: 0.5c-512mb
+    region: frankfurt
+    numInstances: 1
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m mestia serve
+    autoDeployTrigger: off
+    healthCheckPath: /health
+    disk:
+      name: mestia-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MESTIA_DB
+        value: /var/data/mestia.sqlite3
+      - key: MESTIA_MEDIA_DIR
+        value: /var/data/uploads
+      - key: MESTIA_HOST
+        value: 0.0.0.0
+      - key: MESTIA_TRUST_PROXY
+        value: "0"
+      - key: MESTIA_SECURE_COOKIES
+        value: "1"
+      - key: MESTIA_REQUIRE_TOTP
+        value: "0"
+      - key: MESTIA_SQLITE_JOURNAL_MODE
+        value: WAL
+      - key: MESTIA_PUBLIC_URL
+        sync: false
+      - key: MESTIA_INDEXING_ENABLED
+        value: "0"

@@ -7,7 +7,7 @@
 {% set selected_duration = selected_duration|default(request.args.get('duration', '')) %}
 {% set selected_month = selected_month|default(request.args.get('month', '')) %}
 {% set has_filters = selected_region or selected_activity or selected_duration or selected_month %}
-{% block title %}{{ tr('Find your trip', 'აირჩიეთ ტური') }} · {{ settings.get('business_name') or 'Mestia' }}{% endblock %}
+{% block title %}{{ seo.title }}{% endblock %}
 {% block content %}
 <section class="wrap discovery-intro"><div><p class="eyebrow">{{ tr('Svaneti & the roads beyond', 'სვანეთი და სხვა რეგიონები') }}</p><h1>{% if selected_kind == 'stay' %}{{ tr('A place to come back to.', 'ადგილი, სადაც დაბრუნდებით.') }}{% elif selected_kind == 'taxi' %}{{ tr('The next stop is yours.', 'შემდეგი გაჩერება თქვენია.') }}{% else %}{{ tr('Pick your kind of day.', 'აირჩიეთ თქვენი დღე.') }}{% endif %}</h1><p>{% if selected_kind == 'stay' %}{{ tr('Make Svaneti your base. We’ll check a room for your dates.', 'დარჩით სვანეთში. შევამოწმებთ ოთახს თქვენი თარიღებისთვის.') }}{% elif selected_kind == 'taxi' %}{{ tr('From airport arrivals to the mountain road. Tell us where you’re headed.', 'აეროპორტიდან მთის გზებამდე. მოგვწერეთ, სად მიემგზავრებით.') }}{% else %}{{ tr('A few hours out, a full day on the trail, or a longer way around.', 'რამდენიმე საათი ბუნებაში, დღე ბილიკზე ან ხანგრძლივი მოგზაურობა.') }}{% endif %}</p></div><a class="text-link" href="/request?kind={{ selected_kind or 'combined' }}&amp;lang={{ lang }}">{{ tr('Help me choose', 'დამეხმარეთ არჩევაში') }} ↗</a></section>
 <section class="wrap discovery-catalogue">

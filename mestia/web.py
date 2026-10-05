@@ -13,6 +13,7 @@ from functools import wraps
 from pathlib import Path
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
+from xml.etree import ElementTree as ET
 
 from flask import (abort, current_app, flash, g, make_response, redirect,
                    render_template, request, send_from_directory, session, url_for)
@@ -23,6 +24,7 @@ from .destinations import get_destination_slides
 from .catalogue import (MONTH_CHOICES, SERVICE_TEXT_FIELDS, research_checked,
                         research_sources, season_months)
 from .security import csrf_token, validate_csrf, check_password, verify_totp, rate_limit
+from .seo import build_metadata, service_url, sitemap_entries
 
 TBILISI = ZoneInfo('Asia/Tbilisi')
 KINDS = {'tour', 'stay', 'taxi', 'combined'}
@@ -244,10 +246,17 @@ def register_routes(app):
 
     @app.before_request
     def prepare():
-        g.lang = request.args.get('lang', session.get('lang', 'en'))
+        g.csp_nonce = secrets.token_urlsafe(18)
+        stateless = request.endpoint in {'static', 'media', 'robots', 'sitemap', 'health'}
+        public_page = not request.path.startswith(('/admin', '/booking', '/request'))
+        g.lang = request.args.get('lang', 'en' if public_page or stateless else session.get('lang', 'en'))
         if g.lang not in ('en', 'ka'):
             g.lang = 'en'
-        session['lang'] = g.lang
+        g.user = None
+        if stateless:
+            return
+        if request.args.get('lang') in ('en', 'ka') and session.get('lang') != g.lang:
+            session['lang'] = g.lang
         g.user = row('SELECT id,email,role,password_hash FROM users WHERE id=? AND active=1', (session.get('user_id'),)) if session.get('user_id') else None
         if g.user and not hmac.compare_digest(session.get('credential_fingerprint', ''), hashlib.sha256(g.user['password_hash'].encode()).hexdigest()):
             session.pop('user_id', None)
@@ -265,6 +274,7 @@ def register_routes(app):
         data = settings_data()
         return dict(settings=data, destination_slides=get_destination_slides(data),
                     lang=g.get('lang', 'en'), user=g.get('user'),
+                    seo_metadata=build_metadata, service_url=service_url,
                     csrf_token=csrf_token, tr=lambda en, ka: ka if g.get('lang') == 'ka' else en)
 
     @app.after_request
@@ -272,11 +282,19 @@ def register_routes(app):
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['Referrer-Policy'] = 'no-referrer'
-        response.headers['Content-Security-Policy'] = "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+        response.headers['Content-Security-Policy'] = "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self' 'nonce-" + g.csp_nonce + "'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
         response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
-        if request.path.startswith(('/admin', '/booking')):
+        if request.path.startswith(('/admin', '/booking', '/request')):
             response.headers['Cache-Control'] = 'no-store'
             response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+        elif response.status_code >= 400 or request.endpoint == 'health':
+            response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+        elif not app.config['INDEXING_ENABLED']:
+            response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+        elif request.endpoint == 'services' and any(request.args.get(k) for k in ('region', 'activity', 'duration', 'month')):
+            response.headers['X-Robots-Tag'] = 'noindex, follow'
+        if response.mimetype == 'text/html':
+            response.headers['Content-Language'] = g.get('lang', 'en')
         if request.is_secure:
             response.headers['Strict-Transport-Security'] = 'max-age=31536000'
         return response
@@ -287,11 +305,41 @@ def register_routes(app):
     @app.errorhandler(413)
     @app.errorhandler(429)
     def handle_error(error):
+        g.seo_error = True
         return render_template('error.html', code=error.code, message=error.description), error.code
 
     @app.errorhandler(500)
     def internal_error(error):
+        g.seo_error = True
         return render_template('error.html', code=500, message='Something went wrong. Please try again or contact the host.'), 500
+
+    @app.get('/robots.txt')
+    def robots():
+        content = 'User-agent: *\n'
+        if app.config['INDEXING_ENABLED'] and app.config['PUBLIC_URL']:
+            content += 'Allow: /\n\nSitemap: ' + app.config['PUBLIC_URL'] + '/sitemap.xml\n'
+        else:
+            content += 'Disallow: /\n'
+        return app.response_class(content, mimetype='text/plain', headers={'Cache-Control': 'public, max-age=300'})
+
+    @app.get('/sitemap.xml')
+    def sitemap():
+        if not app.config['INDEXING_ENABLED'] or not app.config['PUBLIC_URL']:
+            abort(404)
+        ns = 'http://www.sitemaps.org/schemas/sitemap/0.9'
+        xhtml = 'http://www.w3.org/1999/xhtml'
+        ET.register_namespace('', ns)
+        ET.register_namespace('xhtml', xhtml)
+        root = ET.Element('{' + ns + '}urlset')
+        for entry in sitemap_entries(get_db()):
+            node = ET.SubElement(root, '{' + ns + '}url')
+            ET.SubElement(node, '{' + ns + '}loc').text = entry['loc']
+            if entry.get('lastmod'):
+                ET.SubElement(node, '{' + ns + '}lastmod').text = entry['lastmod']
+            for alternate in entry['alternates']:
+                ET.SubElement(node, '{' + xhtml + '}link', rel='alternate', hreflang=alternate['lang'], href=alternate['url'])
+        return app.response_class(ET.tostring(root, encoding='utf-8', xml_declaration=True), mimetype='application/xml',
+                                  headers={'Cache-Control': 'public, max-age=300'})
 
     @app.get('/health')
     def health():
@@ -350,7 +398,20 @@ def register_routes(app):
         item = row('SELECT * FROM services WHERE id=? AND published=1 AND archived_at IS NULL', (service_id,))
         if not item:
             abort(404)
+        return redirect(service_url(item, g.lang), code=301)
+
+    @app.get('/services/<int:service_id>/<slug>')
+    def service_detail(service_id, slug):
+        item = row('SELECT * FROM services WHERE id=? AND published=1 AND archived_at IS NULL', (service_id,))
+        if not item:
+            abort(404)
+        if slug != item['slug']:
+            return redirect(service_url(item, g.lang), code=301)
         return render_template('service.html', service=item)
+
+    @app.get('/visit-svaneti')
+    def travel_guide():
+        return render_template('travel_guide.html')
 
     @app.get('/about')
     @app.get('/privacy')
@@ -638,7 +699,9 @@ def register_admin(app):
             JOIN resources r ON r.id=a.driver_resource_id JOIN resources v ON v.id=a.vehicle_resource_id
             WHERE a.quote_id=? ORDER BY a.id DESC''', (q['id'],)) if q else []
         share = session.get('share', {})
-        share_url = url_for('status', token=share['token'], _external=True) if share.get('enquiry_id') == identifier else None
+        share_url = None
+        if share.get('enquiry_id') == identifier:
+            share_url = (app.config['PUBLIC_URL'] + url_for('status', token=share['token'])) if app.config['PUBLIC_URL'] else url_for('status', token=share['token'], _external=True)
         history = rows("SELECT a.*,u.email AS actor FROM audit a LEFT JOIN users u ON u.id=a.actor_id WHERE (entity_type='enquiry' AND entity_id=?) OR (entity_type='quote' AND entity_id IN (SELECT id FROM quotes WHERE enquiry_id=?)) OR (entity_type='booking' AND entity_id IN (SELECT id FROM bookings WHERE enquiry_id=?)) ORDER BY a.id DESC LIMIT 100", (identifier,identifier,identifier))
         duplicates = rows('SELECT id,reference,status,starts_at,requested_date,requested_time,timing_pending FROM enquiries WHERE phone=? AND id<>? ORDER BY created_at DESC LIMIT 10', (e['phone'],identifier))
         return render_template('admin_enquiry.html', e=e, duplicates=duplicates, quotes=quotes, quote=q, q=q, items=items,

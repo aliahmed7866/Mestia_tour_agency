@@ -46,6 +46,10 @@ def backup(database, media_dir, output):
         target = sqlite3.connect(snapshot)
         try:
             source.backup(target)
+            # Make a self-contained portable snapshot, even when the source is
+            # WAL-backed. A restore may target a host that cannot support WAL
+            # (for example PythonAnywhere's network filesystem).
+            target.execute("PRAGMA journal_mode = DELETE")
             if target.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
                 raise ValueError("Database failed integrity check.")
         finally:

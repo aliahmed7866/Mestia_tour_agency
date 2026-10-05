@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#e8ebdf"/><stop offset="1" stop-color="#becabb"/></linearGradient></defs>
+  <path fill="#f5f1e7" d="M0 0h1200v630H0z"/>
+  <path fill="url(#sky)" d="M650 0h550v630H650z"/>
+  <circle cx="1050" cy="128" r="51" fill="#d9a172"/>
+  <path d="m570 475 190-352 77 126 88-162 275 388Z" fill="#91a79b"/>
+  <path d="m709 219 51-96 77 126-48-31-25 12-19-34Z" fill="#f4f1e7"/>
+  <path d="m879 172 46-85 93 118-63-29-29 21-21-48Z" fill="#fbf7ea"/>
+  <path d="m612 565 169-238 128 75 112-161 179 178v211H612Z" fill="#627d6b"/>
+  <path d="M650 566c182-70 303-62 550-107v171H650Z" fill="#263d32"/>
+  <path d="m876 581 7-178 51-1 9 179Z" fill="#d8c7a8"/>
+  <path d="M880 403v-17h13v10h10v-11h14v10h10v-10h13v18Z" fill="#d8c7a8"/>
+  <path d="M900 434h17v24h-17zm0 51h17v24h-17zm-2 54h21v42h-21Z" fill="#465b4b"/>
+  <path d="m970 587 5-90h61l5 90Z" fill="#aaac91"/>
+  <path d="m962 498 45-27 40 27Z" fill="#405344"/>
+  <path d="M650 0H0v630h650Z" fill="#f5f1e7"/>
+  <path d="M70 88h53m-45-8 15-25 10 14 10-21 20 32H78" fill="none" stroke="#263d32" stroke-width="2.4" stroke-linejoin="round"/>
+  <text x="70" y="153" font-family="sans-serif" font-size="18" letter-spacing="4" fill="#9b6148">SVANETI · GEORGIA</text>
+  <text x="65" y="258" font-family="serif" font-size="68" fill="#263d32">Mountain days.</text>
+  <text x="65" y="345" font-family="serif" font-size="62" font-style="italic" fill="#9b6148">Warm welcomes.</text>
+  <path d="M70 398h505" stroke="#c4ccba"/>
+  <text x="70" y="448" font-family="sans-serif" font-size="23" fill="#526555">Tours · Guesthouse · Private transfers</text>
+  <text x="70" y="555" font-family="sans-serif" font-size="17" letter-spacing="1" fill="#263d32">START YOUR NEXT GOOD DAY IN MESTIA  ↗</text>
+</svg>

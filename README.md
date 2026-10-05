@@ -4,6 +4,14 @@ A mobile-friendly tourism site and owner workspace for tours, guesthouse stays a
 
 This is an initial pilot implementation. It includes the services from the supplied business card and Riverside Svaneti Guest House, with its Instagram and the card's exact WhatsApp QR destination. Add actual prices, photos, resources and policies before inviting guests. “Mestia Travel” is a provisional name. No real bookings, reviews, drivers or availability are supplied.
 
+## Put it on the web
+
+A free PythonAnywhere pilot can serve this app at its provider HTTPS address. The free plan does not include a custom domain and needs monthly renewal. Its network storage requires SQLite DELETE mode; use the new cloud setup script, not the Termux setup defaults. For the existing app with local persistent storage and a custom domain, a paid Render service plus disk is the simpler option. The included `render.yaml` is a **paid** Blueprint, not a free deployment.
+
+Follow [cloud hosting and data transfer](docs/cloud-hosting.md). Compare [domain options and renewal prices](docs/domain-options.md). No hosting account, paid service or domain is created merely by updating this repository.
+
+The public pages now include distinct search metadata, canonical URLs, useful localized alternates, social previews, structured data, a published-only sitemap and a Svaneti planning guide. Public trip links include a readable slug; previous numeric links and changed slugs redirect to the current route. Private guest links, staff pages and forms remain unindexed. Set `MESTIA_PUBLIC_URL` to the real HTTPS origin and enable `MESTIA_INDEXING_ENABLED=1` after reviewing the live content. Local installations and new cloud setups start with indexing off. Follow [the SEO launch guide](docs/seo-launch.md) for Search Console and business-profile setup.
+
 ## Run on Android with Termux
 
 Install Termux using its [official installation guidance](https://github.com/termux/termux-app#installation). Run these commands **inside Termux's private home directory**, rather than Android shared storage:

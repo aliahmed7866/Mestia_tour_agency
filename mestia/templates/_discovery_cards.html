@@ -14,17 +14,17 @@
 {% macro trip_card(svc, heading='h2') %}
 {% set title = (svc.title_ka if lang == 'ka' else svc.title_en) or svc.title_en %}
 <article class="trip-card">
-  <a class="trip-card-image" href="/services/{{ svc.id }}?lang={{ lang }}" tabindex="-1" aria-hidden="true"><img src="{{ svc.image_path or scene(svc)|trim }}" alt="" width="600" height="400" loading="lazy">{% if not svc.image_path %}<span class="trip-art-label">{{ tr('Illustration', 'ილუსტრაცია') }}</span>{% endif %}{% if svc.duration_days and svc.duration_days > 1 %}<span class="trip-length">{{ svc.duration_days }} {{ tr('days', 'დღე') }}</span>{% elif svc.duration %}<span class="trip-length">{{ svc.duration.split(';')[0]|truncate(42) }}</span>{% endif %}</a>
+  <a class="trip-card-image" href="{{ service_url(svc, lang) }}" tabindex="-1" aria-hidden="true"><img src="{{ svc.image_path or scene(svc)|trim }}" alt="" width="600" height="400" loading="lazy" decoding="async">{% if not svc.image_path %}<span class="trip-art-label">{{ tr('Illustration', 'ილუსტრაცია') }}</span>{% endif %}{% if svc.duration_days and svc.duration_days > 1 %}<span class="trip-length">{{ svc.duration_days }} {{ tr('days', 'დღე') }}</span>{% elif svc.duration %}<span class="trip-length">{{ svc.duration.split(';')[0]|truncate(42) }}</span>{% endif %}</a>
   <div class="trip-card-body">
     <p class="trip-category">{{ svc.region or tr('Svaneti & beyond', 'სვანეთი და სხვა რეგიონები') }} <span aria-hidden="true">/</span> {{ tr('Stay', 'განთავსება') if svc.kind == 'stay' else (tr('Transfer', 'ტრანსფერი') if svc.kind == 'taxi' else tr('Explore', 'ტური')) }}</p>
-    <{{ heading }}><a href="/services/{{ svc.id }}?lang={{ lang }}">{{ title }}</a></{{ heading }}>
+    <{{ heading }}><a href="{{ service_url(svc, lang) }}">{{ title }}</a></{{ heading }}>
     <p class="trip-card-intro">{{ ((svc.description_ka if lang == 'ka' else svc.description_en) or svc.description_en or '')|truncate(155) }}</p>
     {% if svc.base_location or svc.difficulty or svc.season_months %}<dl class="trip-card-facts">
       {% if svc.base_location %}<div><dt>{{ tr('From', 'დასაწყისი') }}</dt><dd>{{ svc.base_location }}</dd></div>{% endif %}
       {% if svc.difficulty %}<div><dt>{{ tr('Pace', 'სირთულე') }}</dt><dd>{{ svc.difficulty|truncate(72) }}</dd></div>{% endif %}
       {% if svc.season_months %}<div><dt>{{ tr('Season', 'სეზონი') }}</dt><dd>{{ months(svc) }}</dd></div>{% endif %}
     </dl>{% endif %}
-    <div class="trip-card-footer"><span class="trip-price">{% if svc.price_minor is not none %}<strong>{{ '%.2f'|format(svc.price_minor/100) }} {{ svc.currency }}</strong>{% if svc.price_basis %}<small>{{ svc.price_basis }}</small>{% endif %}{% else %}{{ tr('Price on request', 'ფასი მოთხოვნით') }}{% endif %}</span><a class="trip-view" href="/services/{{ svc.id }}?lang={{ lang }}">{{ tr('View stay', 'ნახეთ განთავსება') if svc.kind == 'stay' else (tr('View route', 'ნახეთ მარშრუტი') if svc.kind == 'taxi' else tr('View trip', 'ნახეთ ტური')) }} <span aria-hidden="true">↗</span></a></div>
+    <div class="trip-card-footer"><span class="trip-price">{% if svc.price_minor is not none %}<strong>{{ '%.2f'|format(svc.price_minor/100) }} {{ svc.currency }}</strong>{% if svc.price_basis %}<small>{{ svc.price_basis }}</small>{% endif %}{% else %}{{ tr('Price on request', 'ფასი მოთხოვნით') }}{% endif %}</span><a class="trip-view" href="{{ service_url(svc, lang) }}">{{ tr('View stay', 'ნახეთ განთავსება') if svc.kind == 'stay' else (tr('View route', 'ნახეთ მარშრუტი') if svc.kind == 'taxi' else tr('View trip', 'ნახეთ ტური')) }} <span aria-hidden="true">↗</span></a></div>
   </div>
 </article>
 {% endmacro %}

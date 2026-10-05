@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% set current_page = page|default('about') %}
-{% block title %}{{ tr('Booking terms', 'დაჯავშნის პირობები') if current_page == 'terms' else (tr('Privacy', 'კონფიდენციალურობა') if current_page == 'privacy' else tr('Our place', 'ჩვენ შესახებ')) }} · {{ settings.get('business_name') or 'Mestia' }}{% endblock %}
+{% block title %}{{ seo.title }}{% endblock %}
 {% block content %}
 <section class="wrap page-intro"><p class="eyebrow">{{ tr('Mestia · Svaneti · Georgia', 'მესტია · სვანეთი · საქართველო') }}</p><h1>{% if current_page == 'terms' %}{{ tr('Clear plans. A good beginning.', 'ნათელი გეგმები. კარგი დასაწყისი.') }}{% elif current_page == 'privacy' %}{{ tr('Your privacy matters.', 'თქვენი კონფიდენციალურობა მნიშვნელოვანია.') }}{% else %}{{ tr('A little closer to Svaneti.', 'სვანეთთან უფრო ახლოს.') }}{% endif %}</h1></section>
 <section class="wrap info-layout"><div class="prose info-body">

@@ -161,11 +161,17 @@ def deployment_check(app):
         errors.append("DEBUG must be disabled.")
     if not config.get("SESSION_COOKIE_SECURE"):
         warnings.append("Secure session cookies are disabled. Enable them for an HTTPS deployment.")
+    if not config.get("PUBLIC_URL"):
+        warnings.append("Set MESTIA_PUBLIC_URL to your live HTTPS origin for canonical URLs and a sitemap.")
+    if not config.get("INDEXING_ENABLED"):
+        warnings.append("Search indexing is disabled. Set MESTIA_INDEXING_ENABLED=1 after reviewing the public site.")
+    if config.get("SQLITE_JOURNAL_MODE") == "DELETE":
+        warnings.append("SQLite uses DELETE journal mode for this host. Keep backups and check provider database guidance before live operations.")
     dbpath = Path(config["DATABASE"])
     if not dbpath.exists():
         errors.append("Database is missing; run init-db.")
     else:
-        conn = connect(dbpath)
+        conn = connect(dbpath, journal_mode=config.get('SQLITE_JOURNAL_MODE'))
         try:
             if conn.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
                 errors.append("Database integrity check failed.")

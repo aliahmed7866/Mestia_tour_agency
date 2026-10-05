@@ -1,11 +1,18 @@
 <!doctype html>
 <html lang="{{ lang|default('en') }}">
+{% set seo = seo_metadata(settings, service|default(none)) %}
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#263d32">
-  <meta name="description" content="{{ tr('Plan a mountain escape in Mestia, Svaneti. Request guided tours, a guesthouse stay and local transfers in one place.', 'დაგეგმეთ მოგზაურობა მესტიაში, სვანეთში. მოითხოვეთ ტური, საოჯახო სასტუმროში განთავსება და ტრანსფერი.') }}">
-  <title>{% block title %}{{ settings.get('business_name') or 'Mestia' }} · {{ tr('Svaneti, Georgia', 'სვანეთი, საქართველო') }}{% endblock %}</title>
+  <meta name="description" content="{{ seo.description }}">
+  <meta name="robots" content="{{ seo.robots }}">
+  <title>{% block title %}{{ seo.title }}{% endblock %}</title>
+  {% if seo.canonical %}<link rel="canonical" href="{{ seo.canonical }}">{% endif %}
+  {% for alternate in seo.alternates %}<link rel="alternate" hreflang="{{ alternate.lang }}" href="{{ alternate.url }}">{% endfor %}
+  {% for key, value in seo.og.items() %}{% if value %}<meta property="og:{{ key|replace('_', ':') }}" content="{{ value }}">{% endif %}{% endfor %}
+  {% for key, value in seo.twitter.items() %}{% if value %}<meta name="twitter:{{ key }}" content="{{ value }}">{% endif %}{% endfor %}
+  {% if seo.structured_data %}<script type="application/ld+json" nonce="{{ g.csp_nonce }}">{{ seo.structured_data|tojson }}</script>{% endif %}
   <link rel="icon" href="/static/mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/app.js" defer></script>
@@ -24,6 +31,7 @@
       <a href="/services?kind=tour&amp;lang={{ lang }}">{{ tr('Tours', 'ტურები') }}</a>
       <a href="/services?kind=stay&amp;lang={{ lang }}">{{ tr('Guesthouse', 'სასტუმრო') }}</a>
       <a href="/services?kind=taxi&amp;lang={{ lang }}">{{ tr('Taxi & transfers', 'ტაქსი და ტრანსფერი') }}</a>
+      <a href="/visit-svaneti?lang={{ lang }}">{{ tr('Plan Svaneti', 'დაგეგმეთ სვანეთი') }}</a>
       <a href="/about?lang={{ lang }}">{{ tr('Our place', 'ჩვენ შესახებ') }}</a>
       <a class="language-link" href="{{ request.path }}?lang={{ 'ka' if lang == 'en' else 'en' }}{% for param in ['kind','service_id','region','activity','duration','month'] %}{% if request.args.get(param) %}&amp;{{ param }}={{ request.args.get(param)|urlencode }}{% endif %}{% endfor %}" lang="{{ 'ka' if lang == 'en' else 'en' }}" aria-label="{{ 'Switch to Georgian' if lang == 'en' else 'Switch to English' }}">{{ 'ქარ' if lang == 'en' else 'EN' }}</a>
       <a class="button button-small" href="/request?lang={{ lang }}">{{ tr('Plan your visit', 'დაგეგმეთ ვიზიტი') }} <span aria-hidden="true">↗</span></a>
@@ -34,7 +42,7 @@
   <footer class="site-footer">
     <div class="wrap footer-grid">
       <div><a class="footer-brand" href="/?lang={{ lang }}">{{ settings.get('business_name') or 'Mestia' }}</a><p>{{ tr('A little closer to the mountains.', 'მთებთან უფრო ახლოს.') }}<br>{{ tr('Mestia · Svaneti · Georgia', 'მესტია · სვანეთი · საქართველო') }}</p></div>
-      <div><h2>{{ tr('Make yourself at home', 'იგრძენით თავი შინ') }}</h2><a href="/services?kind=tour&amp;lang={{ lang }}">{{ tr('Explore tours', 'აღმოაჩინეთ ტურები') }}</a><a href="/services?kind=stay&amp;lang={{ lang }}">{{ tr('Stay with us', 'დარჩით ჩვენთან') }}</a><a href="/services?kind=taxi&amp;lang={{ lang }}">{{ tr('Taxi & transfers', 'ტაქსი და ტრანსფერი') }}</a></div>
+      <div><h2>{{ tr('Make yourself at home', 'იგრძენით თავი შინ') }}</h2><a href="/visit-svaneti?lang={{ lang }}">{{ tr('Svaneti travel guide', 'სვანეთში მოგზაურობის გზამკვლევი') }}</a><a href="/services?kind=tour&amp;lang={{ lang }}">{{ tr('Explore tours', 'აღმოაჩინეთ ტურები') }}</a><a href="/services?kind=stay&amp;lang={{ lang }}">{{ tr('Stay with us', 'დარჩით ჩვენთან') }}</a><a href="/services?kind=taxi&amp;lang={{ lang }}">{{ tr('Taxi & transfers', 'ტაქსი და ტრანსფერი') }}</a></div>
       <div><h2>{{ tr('Let’s plan your visit', 'დაგეგმეთ თქვენი ვიზიტი') }}</h2>{% if settings.get('whatsapp_url') %}<a href="{{ settings.whatsapp_url }}" target="_blank" rel="noopener noreferrer">{{ tr('Contact on WhatsApp', 'დაგვიკავშირდით WhatsApp-ზე') }} ↗</a>{% endif %}{% if settings.get('guesthouse_instagram_url') %}<a href="{{ settings.guesthouse_instagram_url }}" target="_blank" rel="noopener noreferrer">{{ tr('Guesthouse on Instagram', 'სასტუმრო Instagram-ზე') }} ↗</a>{% endif %}{% if settings.get('guide_instagram_url') %}<a href="{{ settings.guide_instagram_url }}" target="_blank" rel="noopener noreferrer">{{ tr('Your guide on Instagram', 'თქვენი გიდი Instagram-ზე') }} ↗</a>{% endif %}{% if settings.get('email') %}<a href="mailto:{{ settings.email }}">{{ settings.email }}</a>{% endif %}{% if settings.get('address') %}<p>{{ settings.address }}</p>{% endif %}{% if settings.get('hours') %}<p>{{ settings.hours }}</p>{% endif %}<a href="/request?lang={{ lang }}">{{ tr('Send an enquiry', 'გამოგვიგზავნეთ მოთხოვნა') }} ↗</a></div>
     </div>
     <div class="wrap footer-bottom"><span>{{ tr('Made for mountain days.', 'მთაში გატარებული დღეებისთვის.') }}</span><div><a href="/terms?lang={{ lang }}">{{ tr('Booking terms', 'დაჯავშნის პირობები') }}</a><a href="/privacy?lang={{ lang }}">{{ tr('Privacy', 'კონფიდენციალურობა') }}</a><a href="/admin/login">{{ tr('Staff sign in', 'თანამშრომლის შესვლა') }}</a></div></div>

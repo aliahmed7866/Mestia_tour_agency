@@ -87,7 +87,8 @@ def test_draft_preview_publication_disable_delete_and_restore(catalogue):
     assert response.status_code == 200 and response.headers['Cache-Control'] == 'no-store'
     assert f'/request?service_id={identifier}' not in response.text
     assert post(owner, {'id': str(identifier), 'action': 'publish'}).status_code == 302
-    assert guest.get(url).status_code == 200
+    assert guest.get(url).status_code == 301
+    assert guest.get(url, follow_redirects=True).status_code == 200
     assert post(owner, {'id': str(identifier), 'action': 'unpublish'}).status_code == 302
     assert guest.get(url).status_code == 404
     assert post(owner, {'id': str(identifier), 'action': 'delete'}).status_code == 400
@@ -209,7 +210,7 @@ def test_public_filters_do_not_leak_drafts_archived_or_private_research(catalogu
     assert 'Visible longer journey' not in result
     assert 'Secret route draft' not in result and 'Archived published mistake' not in result
     assert 'Visible alpine walk' not in guest.get('/services?month=1').text
-    result = guest.get(f'/services/{day}').text
+    result = guest.get(f'/services/{day}', follow_redirects=True).text
     assert 'PRIVATE_OPERATOR_NOTE' not in result and 'private-research-link' not in result
     for filters in ('month=13', 'duration=week', 'kind=invalid', 'month=7%27%20OR%201=1'):
         assert guest.get('/services?' + filters).status_code == 400

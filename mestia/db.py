@@ -1,13 +1,25 @@
 """SQLite persistence. All inventory decisions use an immediate transaction."""
+import os
 import sqlite3
 
 
-def connect(path):
+def connect(path, journal_mode=None):
+    # WAL is appropriate for a local disk (Termux / a Render persistent disk).
+    # PythonAnywhere uses network storage, where WAL is unsupported. The owner
+    # must select DELETE there; never silently fall back to a different mode.
+    mode = str(journal_mode if journal_mode is not None else
+               os.environ.get('MESTIA_SQLITE_JOURNAL_MODE', 'WAL')).strip().upper()
+    if mode not in {'WAL', 'DELETE'}:
+        raise ValueError('MESTIA_SQLITE_JOURNAL_MODE must be WAL or DELETE.')
     conn = sqlite3.connect(str(path), timeout=15, isolation_level=None)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA journal_mode = WAL")
-    conn.execute("PRAGMA busy_timeout = 15000")
+    try:
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute(f"PRAGMA journal_mode = {mode}")
+        conn.execute("PRAGMA busy_timeout = 15000")
+    except BaseException:
+        conn.close()
+        raise
     return conn
 
 
