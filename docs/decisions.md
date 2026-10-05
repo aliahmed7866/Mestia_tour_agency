@@ -51,3 +51,11 @@ The supplied Instagram link and screenshot identify **Riverside Svaneti Guest Ho
 The owner also requested SVG mountain artwork and destination image placeholders that become a slideshow. Illustrated placeholders are clearly distinguished from real destination photography; the owner can replace them with approved images in Admin Settings.
 
 This content update is transactional and runs once, preserving existing nonempty settings, matching owner-created services, and later operator edits. It creates no rooms, vehicles, drivers, prices or bookings.
+
+## Researched offering catalogue · 5 October 2026
+
+The owner requested research-informed presets using TravelMestia and Budget Georgia for reference. Seventeen original route proposals were prepared, ten centered on Svaneti. The [research record](offering-research.md) distinguishes source facts, planning estimates and unresolved local delivery decisions. Presets start as drafts with no invented prices, group limits or resource inventory, matching the brief's requirement for guide review before publication.
+
+Offering fields are stored as editable service data, including bilingual itinerary/season/logistics, private operator notes and dated source URLs. Month filters are discovery aids, not availability rules. New columns are added in place to existing SQLite installations. A once-only seed marker prevents future restarts from overriding changes or recreating removed offers.
+
+Catalogue deletion is a reversible soft deletion: the offering leaves the public catalogue and new-selection lists while linked enquiry, quote and allocation history survives. Existing agreements retain their snapshots. Restoring a deleted service makes it a draft. Owners control these actions; dispatchers retain operational access without catalogue mutation rights.

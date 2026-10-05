@@ -128,7 +128,7 @@ bash scripts/test.sh
 bash scripts/start.sh
 ```
 
-The current initialization is repeatable and preserves rows. It is not a general migration system for future schema changes: read future release instructions before updating a live installation. Never reset the working database to make an update succeed. Review dependency security updates as part of ongoing maintenance.
+This update adds catalogue columns without rebuilding existing tables, then installs researched drafts once. Existing rows, operator edits, deleted/disabled offers and configuration are preserved. This is a specific additive migration, not a general promise of compatibility with every future schema change: read future release instructions before updating a live installation. Never reset the working database to make an update succeed. Review dependency security updates as part of ongoing maintenance.
 
 ## Official references
 

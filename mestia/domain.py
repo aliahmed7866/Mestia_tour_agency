@@ -153,6 +153,8 @@ def create_enquiry(conn, data, actor_id=None):
                 return dict(existing)
         if service_id:
             service = _row(conn, 'services', service_id)
+            if service['archived_at']:
+                raise DomainError('This service has been deleted from the catalogue.')
             if not actor_id and not service['published']:
                 raise DomainError('This service is not accepting public requests.')
             if kind != 'combined' and service['kind'] != kind:
@@ -268,6 +270,8 @@ def _quote(conn, enquiry_id, data, actor_id):
         if kind not in ('tour', 'stay', 'taxi'):
             raise DomainError('Choose a service type for each quote item.')
         if service:
+            if service['archived_at']:
+                raise DomainError('This service has been deleted. Choose another service for a new quote.')
             provider = _row(conn, 'providers', service['provider_id'])
             if not provider['active'] or not provider['approved']:
                 raise DomainError('The service provider is not approved and active.')

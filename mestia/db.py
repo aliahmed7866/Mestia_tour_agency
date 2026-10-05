@@ -37,7 +37,17 @@ CREATE TABLE IF NOT EXISTS services (
  currency TEXT NOT NULL DEFAULT 'GEL', price_basis TEXT NOT NULL DEFAULT '',
  duration TEXT NOT NULL DEFAULT '', difficulty TEXT NOT NULL DEFAULT '',
  capacity INTEGER CHECK(capacity > 0), published INTEGER NOT NULL DEFAULT 0,
- created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ region TEXT NOT NULL DEFAULT '', base_location TEXT NOT NULL DEFAULT '', activity TEXT NOT NULL DEFAULT '',
+ season_en TEXT NOT NULL DEFAULT '', season_ka TEXT NOT NULL DEFAULT '',
+ meeting_point_en TEXT NOT NULL DEFAULT '', meeting_point_ka TEXT NOT NULL DEFAULT '',
+ exclusions_en TEXT NOT NULL DEFAULT '', exclusions_ka TEXT NOT NULL DEFAULT '',
+ weather_en TEXT NOT NULL DEFAULT '', weather_ka TEXT NOT NULL DEFAULT '',
+ walking_en TEXT NOT NULL DEFAULT '', walking_ka TEXT NOT NULL DEFAULT '',
+ driving_en TEXT NOT NULL DEFAULT '', driving_ka TEXT NOT NULL DEFAULT '',
+ operator_notes TEXT NOT NULL DEFAULT '', research_sources TEXT NOT NULL DEFAULT '',
+ research_checked TEXT NOT NULL DEFAULT '', season_months TEXT NOT NULL DEFAULT '',
+ preset_key TEXT NOT NULL DEFAULT '', duration_days INTEGER CHECK(duration_days >= 1), archived_at TEXT
 );
 CREATE TABLE IF NOT EXISTS resources (
  id INTEGER PRIMARY KEY, provider_id INTEGER NOT NULL REFERENCES providers(id),
@@ -147,10 +157,14 @@ CREATE INDEX IF NOT EXISTS quotes_expiry ON quotes(status,expires_at);
 
 def init_db(conn):
     conn.executescript(SCHEMA)
+    from .catalogue import migrate_catalogue
+    migrate_catalogue(conn)
     seed_defaults(conn)
     from .business_content import apply_guide_profile, apply_owner_content
     apply_owner_content(conn)
     apply_guide_profile(conn)
+    from .offering_presets import apply_offering_presets
+    apply_offering_presets(conn)
 
 
 def seed_defaults(conn):

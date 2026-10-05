@@ -42,7 +42,8 @@ The same setup and start scripts work on Linux with Python 3.11+ and `venv` inst
 ## What the pilot covers
 
 - Public service pages, English/Georgian navigation, request forms and private guest status links.
-- Owner-managed catalogue, providers, resources and availability blocks.
+- Seventeen researched offering drafts, focused on Svaneti, with editable itineraries, seasons, logistics and source notes.
+- Owner-managed catalogue with preview, publish, disable, delete and restore; providers, resources and availability blocks.
 - Enquiry → quote → guest acceptance → staff confirmation, with expiring inventory holds.
 - Room-night and shared guide/driver/vehicle conflict checks in database transactions.
 - Manual taxi dispatch, acceptance evidence, reassignment and unavailable-driver outcomes.
@@ -50,6 +51,12 @@ The same setup and start scripts work on Linux with Python 3.11+ and `venv` inst
 - Individual staff accounts with passwords and optional authenticator codes, server-side permissions, CSRF protection, request throttling and a form spam trap.
 
 Opening WhatsApp does not send a message or confirm a booking. The supplied QR business link opens the chat; guests must include their request reference manually. If the owner enters a full international WhatsApp number in settings, guest links can prefill the reference. Staff handle chats, verify contact, record payments and complete reminder tasks manually. Tours initially reserve guides exclusively for private trips; a shared-seat departure workflow is later work. There is no WhatsApp inbox sync, automatic messaging, card checkout or accommodation-channel sync. Georgian copy needs a native-speaker review. Do a supervised pilot with your real inventory before launch.
+
+## Researched offering presets
+
+The next startup adds 17 route drafts once: ten Svaneti outings, western transfers and touring, plus Tbilisi-based Kazbegi and Kakheti extensions. They do not replace existing services or publish themselves. Open **Admin → Services → Drafts**, edit a route, preview it and publish when the guide has confirmed delivery. Prices, actual resources and group limits are deliberately unfilled. Source URLs, checked date and private planning notes live in each editor.
+
+Every offering's public copy and logistics can be changed without code. Disabling hides it; deleting removes it from the active catalogue while preserving enquiry/quote history; restoring returns it as a draft. Later restarts preserve those choices. Calendar filters describe the planned season, not live availability. Read the [research and route decisions](docs/offering-research.md).
 
 ## Operations and development
 

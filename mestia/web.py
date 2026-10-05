@@ -20,6 +20,8 @@ from . import get_db
 from . import domain
 from .business_content import instagram_profile, whatsapp_business_link, whatsapp_contact
 from .destinations import get_destination_slides
+from .catalogue import (MONTH_CHOICES, SERVICE_TEXT_FIELDS, research_checked,
+                        research_sources, season_months)
 from .security import csrf_token, validate_csrf, check_password, verify_totp, rate_limit
 
 TBILISI = ZoneInfo('Asia/Tbilisi')
@@ -156,7 +158,7 @@ def enquiry_input(form, source='website'):
     ids = form.getlist('service_ids') if hasattr(form, 'getlist') else []
     selected = []
     for value in ids[:10]:
-        service = row('SELECT id,title_en FROM services WHERE id=? AND published=1', (integer(value),))
+        service = row('SELECT id,title_en FROM services WHERE id=? AND published=1 AND archived_at IS NULL', (integer(value),))
         if not service:
             raise ValueError('A selected service is no longer available for requests.')
         selected.append(service)
@@ -268,22 +270,48 @@ def register_routes(app):
 
     @app.get('/')
     def home():
-        return render_template('home.html', services=rows('SELECT * FROM services WHERE published=1 ORDER BY id DESC LIMIT 6'))
+        return render_template('home.html', services=rows('SELECT * FROM services WHERE published=1 AND archived_at IS NULL ORDER BY id DESC LIMIT 6'))
 
     @app.get('/services')
     def services():
         kind = request.args.get('kind', '')
-        query = 'SELECT * FROM services WHERE published=1'
-        params = ()
-        if kind in {'tour', 'stay', 'taxi'}:
+        if kind not in {'', 'tour', 'stay', 'taxi'}:
+            abort(400, description='Choose a valid service type.')
+        region = request.args.get('region', '').strip()
+        activity = request.args.get('activity', '').strip()
+        duration = request.args.get('duration', '')
+        month = request.args.get('month', '')
+        if len(region) > 150 or len(activity) > 100 or duration not in {'', 'day', 'multi'}:
+            abort(400, description='Choose valid catalogue filters.')
+        if month and not re.fullmatch(r'(?:[1-9]|1[0-2])', month):
+            abort(400, description='Choose a month between 1 and 12.')
+        query = 'SELECT * FROM services WHERE published=1 AND archived_at IS NULL'
+        params = []
+        if kind:
             query += ' AND kind=?'
-            params = (kind,)
+            params.append(kind)
+        for field, value in (('region', region), ('activity', activity)):
+            if value:
+                query += f' AND {field}=?'
+                params.append(value)
+        if duration:
+            query += ' AND duration_days=1' if duration == 'day' else ' AND duration_days>1'
+        if month:
+            query += " AND instr(',' || season_months || ',',?)>0"
+            params.append(',' + month + ',')
         data = rows(query + ' ORDER BY id DESC', params)
-        return render_template('services.html', services=data, kind=kind)
+        regions = [record['region'] for record in rows("SELECT DISTINCT region FROM services WHERE published=1 AND archived_at IS NULL AND region<>'' ORDER BY region")]
+        activities = [record['activity'] for record in rows("SELECT DISTINCT activity FROM services WHERE published=1 AND archived_at IS NULL AND activity<>'' ORDER BY activity")]
+        return render_template('services.html', services=data, kind=kind,
+                               selected_region=region, selected_activity=activity,
+                               selected_duration=duration, selected_month=month,
+                               regions=regions, activities=activities,
+                               region_choices=regions, activity_choices=activities,
+                               month_choices=MONTH_CHOICES)
 
     @app.get('/services/<int:service_id>')
     def service(service_id):
-        item = row('SELECT * FROM services WHERE id=? AND published=1', (service_id,))
+        item = row('SELECT * FROM services WHERE id=? AND published=1 AND archived_at IS NULL', (service_id,))
         if not item:
             abort(404)
         return render_template('service.html', service=item)
@@ -325,7 +353,7 @@ def register_routes(app):
             except (ValueError, sqlite3.IntegrityError) as exc:
                 error = str(exc) if isinstance(exc, ValueError) else 'This request was already received. Please use your saved private link.'
         session.setdefault('request_key', secrets.token_urlsafe(24))
-        return render_template('request.html', services=rows('SELECT * FROM services WHERE published=1'),
+        return render_template('request.html', services=rows('SELECT * FROM services WHERE published=1 AND archived_at IS NULL'),
                                selected_service_id=request.args.get('service_id', type=int),
                                request_key=session['request_key'], form=request.form, error=error), (400 if error else 200)
 
@@ -538,7 +566,7 @@ def register_admin(app):
             except ValueError as exc:
                 error = str(exc)
         return render_template('admin_manual.html', error=error, form=request.form,
-                               services=rows('SELECT * FROM services WHERE published=1'), request_key=secrets.token_urlsafe(24)), (400 if error else 200)
+                               services=rows('SELECT * FROM services WHERE published=1 AND archived_at IS NULL'), request_key=secrets.token_urlsafe(24)), (400 if error else 200)
 
     @app.get('/admin/enquiries/<int:identifier>')
     @staff()
@@ -563,7 +591,7 @@ def register_admin(app):
         return render_template('admin_enquiry.html', e=e, duplicates=duplicates, quotes=quotes, quote=q, q=q, items=items,
                                allocations=allocations, bookings=bookings, booking=booking, payments=payments,
                                assignments=assignments, resources=rows('SELECT * FROM resources WHERE active=1 ORDER BY kind,name'),
-                               services=rows('SELECT * FROM services ORDER BY title_en'), history=history,
+                               services=rows('SELECT * FROM services WHERE archived_at IS NULL ORDER BY title_en'), history=history,
                                changes=rows('SELECT * FROM change_requests WHERE enquiry_id=? ORDER BY id DESC', (identifier,)),
                                share_url=share_url,
                                default_expiry=local_input((datetime.now(timezone.utc)+timedelta(hours=24)).isoformat()))
@@ -665,39 +693,132 @@ def register_admin(app):
 
     @app.route('/admin/services', methods=['GET','POST'])
     @staff(owner=True)
+    @atomic_post
     def admin_services():
-        if request.method=='POST':
+        if request.method == 'POST':
+            f = request.form
+            identifier = None
+            old = None
             try:
-                f=request.form
-                identifier=integer(f.get('id')) if f.get('id') else None
-                old=row('SELECT * FROM services WHERE id=?',(identifier,)) if identifier else None
-                if identifier and not old: abort(404)
-                kind=f.get('kind')
-                if kind not in ('tour','stay','taxi'): raise ValueError('Choose a valid service kind.')
-                provider=integer(f.get('provider_id','1'))
-                if not row('SELECT id FROM providers WHERE id=? AND active=1',(provider,)): raise ValueError('Choose an active provider.')
-                currency=f.get('currency','GEL').upper()
-                if not re.fullmatch('[A-Z]{3}',currency): raise ValueError('Use a three-letter currency code.')
-                image=save_image(request.files.get('photo')) or (old['image_path'] if old else '')
-                data=dict(provider_id=provider,kind=kind,title_en=required(f.get('title_en'),'English title',200),
-                          title_ka=f.get('title_ka','')[:200], description_en=f.get('description_en','')[:5000],
-                          description_ka=f.get('description_ka','')[:5000],details_en=f.get('details_en','')[:20000],details_ka=f.get('details_ka','')[:20000],
-                          price_minor=money(f.get('price')) if f.get('price','').strip() else None,
-                          currency=currency,price_basis=f.get('price_basis','')[:100],image_path=image,
-                          duration=f.get('duration','')[:100],difficulty=f.get('difficulty','')[:100],
-                          capacity=integer(f.get('capacity'),'Capacity',1,1000) if f.get('capacity') else None,
-                          published=int(f.get('published')=='on'))
+                identifier = integer(f.get('id')) if f.get('id') else None
+                old = row('SELECT * FROM services WHERE id=?', (identifier,)) if identifier else None
+                if identifier and not old:
+                    abort(404)
+                action = f.get('action', 'save')
+                if action in {'publish', 'unpublish', 'delete', 'restore'}:
+                    if not old:
+                        raise ValueError('Choose an existing service first.')
+                    if action == 'delete':
+                        if f.get('confirm_delete') != 'on':
+                            raise ValueError('Confirm deletion of this service. Existing enquiry and quote records will be kept.')
+                        get_db().execute('UPDATE services SET archived_at=COALESCE(archived_at,?),published=0,updated_at=? WHERE id=?',
+                                         (now_iso(), now_iso(), identifier))
+                    elif action == 'restore':
+                        get_db().execute('UPDATE services SET archived_at=NULL,published=0,updated_at=? WHERE id=?', (now_iso(), identifier))
+                    else:
+                        if old['archived_at']:
+                            raise ValueError('Restore the deleted service before changing its publication status.')
+                        get_db().execute('UPDATE services SET published=?,updated_at=? WHERE id=?',
+                                         (int(action == 'publish'), now_iso(), identifier))
+                    audit('service_' + action, 'service', identifier)
+                    flash({'publish': 'Service published.', 'unpublish': 'Service disabled and saved as a draft.',
+                           'delete': 'Service deleted from the catalogue. Enquiries and quotes are preserved.',
+                           'restore': 'Service restored as a draft.'}[action], 'success')
+                    return redirect('/admin/services?status=' + ('deleted' if action == 'delete' else 'all'))
+                if action not in {'save', 'create', 'update'}:
+                    raise ValueError('Choose a valid catalogue action.')
+                if old and old['archived_at']:
+                    raise ValueError('Restore the deleted service before editing it.')
+                previous = old or {}
+                # Partial submissions must never silently clear an owner's saved content.
+                value = lambda key, default='': f.get(key, previous.get(key, default))
+                kind = value('kind', 'tour')
+                if kind not in ('tour', 'stay', 'taxi'):
+                    raise ValueError('Choose a valid service kind.')
+                provider = integer(value('provider_id', '1'))
+                provider_row = row('SELECT id,active FROM providers WHERE id=?', (provider,))
+                if not provider_row or (not provider_row['active'] and provider != previous.get('provider_id')):
+                    raise ValueError('Choose an active provider.')
+                currency = value('currency', 'GEL').strip().upper()
+                if not re.fullmatch('[A-Z]{3}', currency):
+                    raise ValueError('Use a three-letter currency code.')
+                data = dict(provider_id=provider, kind=kind, currency=currency)
+                for key, limit in SERVICE_TEXT_FIELDS.items():
+                    text = str(value(key) or '').strip()
+                    if len(text) > limit:
+                        raise ValueError(f'{key.replace("_", " ").capitalize()} must be at most {limit} characters.')
+                    data[key] = text
+                data['title_en'] = required(data['title_en'], 'English title', 200)
+                slug = str(value('slug') or '').strip()
+                if not slug:
+                    slug = (re.sub('[^a-z0-9]+', '-', data['title_en'].lower()).strip('-')[:70] or 'service') + '-' + secrets.token_hex(3)
+                if not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', slug) or len(slug) > 120:
+                    raise ValueError('Slug must be at most 120 lowercase letters, numbers and separating hyphens.')
+                if row('SELECT id FROM services WHERE slug=? AND id<>?', (slug, identifier or 0)):
+                    raise ValueError('That slug is already used by another service.')
+                data['slug'] = slug
+                data['price_minor'] = (money(f.get('price')) if f.get('price', '').strip() else None) if 'price' in f else previous.get('price_minor')
+                for key, label, maximum in (('capacity', 'Capacity', 1000), ('duration_days', 'Duration in days', 365)):
+                    number = value(key)
+                    data[key] = integer(number, label, 1, maximum) if number not in ('', None) else None
+                data['season_months'] = season_months(f.getlist('season_months') if 'season_months' in f or 'season_months_present' in f else previous.get('season_months', ''))
+                data['research_sources'] = research_sources(value('research_sources'))
+                data['research_checked'] = research_checked(value('research_checked'))
+                data['published'] = int(f.get('published') == 'on') if 'published' in f or 'published_present' in f else previous.get('published', 0)
+                data['image_path'] = previous.get('image_path', '')
+                data['photo_url'] = previous.get('photo_url', '')
+                if f.get('remove_photo') == 'on':
+                    data['image_path'] = data['photo_url'] = ''
+                uploaded = save_image(request.files.get('photo'))
+                if uploaded:
+                    data['image_path'] = uploaded
+                    data['photo_url'] = ''
                 if identifier:
-                    get_db().execute('UPDATE services SET '+','.join(k+'=?' for k in data)+',updated_at=? WHERE id=?',(*data.values(),now_iso(),identifier))
+                    get_db().execute('UPDATE services SET ' + ','.join(k + '=?' for k in data) + ',updated_at=? WHERE id=?',
+                                     (*data.values(), now_iso(), identifier))
                 else:
-                    data['slug']=re.sub('[^a-z0-9]+','-',data['title_en'].lower()).strip('-')[:70]+'-'+secrets.token_hex(3)
-                    identifier=get_db().execute('INSERT INTO services('+','.join(data)+') VALUES ('+','.join('?' for _ in data)+')',tuple(data.values())).lastrowid
-                audit('service_saved','service',identifier)
-                flash('Service saved.','success')
+                    identifier = get_db().execute('INSERT INTO services(' + ','.join(data) + ') VALUES (' + ','.join('?' for _ in data) + ')', tuple(data.values())).lastrowid
+                audit('service_saved', 'service', identifier)
+                flash('Service saved.', 'success')
+                return redirect(f'/admin/services/{identifier}/edit')
             except ValueError as exc:
-                flash(str(exc),'error')
-            return redirect('/admin/services')
-        return render_template('admin_services.html',services=rows('SELECT * FROM services ORDER BY id DESC'),providers=rows('SELECT * FROM providers WHERE active=1'))
+                submitted = dict(old or {})
+                submitted.update(f.to_dict())
+                if 'season_months_present' in f:
+                    submitted['season_months'] = ','.join(f.getlist('season_months'))
+                if 'published_present' in f:
+                    submitted['published'] = int(f.get('published') == 'on')
+                if identifier:
+                    submitted['id'] = identifier
+                return render_template('admin_service_edit.html', service=submitted,
+                                       providers=rows('SELECT * FROM providers ORDER BY active DESC,name'),
+                                       month_choices=MONTH_CHOICES, error=str(exc), form=f), 400
+        status = request.args.get('status', 'all')
+        conditions = {'all': 'archived_at IS NULL', 'published': 'archived_at IS NULL AND published=1',
+                      'draft': 'archived_at IS NULL AND published=0', 'deleted': 'archived_at IS NOT NULL'}
+        if status not in conditions:
+            abort(400, description='Choose all, published, draft or deleted services.')
+        return render_template('admin_services.html', services=rows('SELECT * FROM services WHERE ' + conditions[status] + ' ORDER BY id DESC'),
+                               selected_status=status, providers=rows('SELECT * FROM providers WHERE active=1'))
+
+    @app.get('/admin/services/new')
+    @app.get('/admin/services/<int:identifier>/edit')
+    @staff(owner=True)
+    def admin_service_edit(identifier=None):
+        item = row('SELECT * FROM services WHERE id=?', (identifier,)) if identifier else {}
+        if identifier and not item:
+            abort(404)
+        return render_template('admin_service_edit.html', service=item,
+                               providers=rows('SELECT * FROM providers ORDER BY active DESC,name'),
+                               month_choices=MONTH_CHOICES, error=None, form={})
+
+    @app.get('/admin/services/<int:identifier>/preview')
+    @staff(owner=True)
+    def admin_service_preview(identifier):
+        item = row('SELECT * FROM services WHERE id=?', (identifier,))
+        if not item:
+            abort(404)
+        return render_template('service.html', service=item, preview=True)
 
     @app.route('/admin/resources', methods=['GET','POST'])
     @staff()

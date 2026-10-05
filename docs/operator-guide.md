@@ -19,6 +19,14 @@ Use rooms as individual room resources for exclusive room-night inventory. Recor
 
 In Admin Settings, add approved destination photos to the three slideshow slots and edit their English and Georgian titles and captions. An empty slot displays mountain artwork as an illustration placeholder. Upload JPEG, PNG or WebP files, each no larger than 6 MB; the whole form must stay under 8 MB, so upload large photos one at a time. Use images you have permission to publish and describe the pictured destination accurately. These homepage images do not create bookable services or establish availability.
 
+## Edit, publish or remove an offering
+
+Go to **Services** and select **Drafts** to find the 17 researched route presets. Open **Edit** for a single offering. The groups cover the name and story, route and itinerary, season and weather alternative, meeting point, walking/driving, requirements, inclusions/exclusions, prices and photos. English and Georgian fields are independent; blank Georgian fields use English on the public page. Enter a three-letter currency and a price basis such as per group or per vehicle when supplying a rate. A blank price requests a quote. The group-size field does not create bookable inventory.
+
+Research sources, checked date and operator notes are private. Check the proposed route against current local access, available guides/drivers and accommodation before publishing. The month checkboxes drive catalogue filtering; they neither reserve resources nor approve a departure. A four-day trek's arrival night, onward travel and weather buffer must be reflected in the final guest quote. See the [research notes](offering-research.md) for the evidence and route choices.
+
+Use **Preview** to see a draft without making it public. **Publish** makes it visible; **Disable** returns it to draft. **Delete** requires the confirmation checkbox and removes it from the active catalogue and new selection lists. It keeps historical enquiry and quote references. In **Deleted**, use **Restore** to recover it as a draft. Neither restarting nor updating this preset pack recreates or republishes removed offers. Catalogue edits do not rewrite saved quote prices or inclusions; revise the guest's quote separately if their agreement changes.
+
 ## An enquiry is not a reservation
 
 A website request enters the enquiry queue and gives the guest a reference and private status link. No stock is reserved merely because a request exists. Enter direct phone and WhatsApp requests in the same queue so they follow the same checks.

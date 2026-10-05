@@ -68,10 +68,10 @@ def test_guide_profile_upgrades_existing_content_once(tmp_path, previous_profile
         conn.execute("DELETE FROM settings WHERE key='guide_instagram_url'")
     else:
         conn.execute("UPDATE settings SET value=? WHERE key='guide_instagram_url'", (previous_profile,))
-    services = [tuple(row) for row in conn.execute('SELECT * FROM services ORDER BY id')]
+    services = [tuple(row) for row in conn.execute("SELECT * FROM services WHERE preset_key='' ORDER BY id")]
     init_db(conn)
     assert conn.execute("SELECT value FROM settings WHERE key='guide_instagram_url'").fetchone()[0] == GUIDE_INSTAGRAM
-    assert [tuple(row) for row in conn.execute('SELECT * FROM services ORDER BY id')] == services
+    assert [tuple(row) for row in conn.execute("SELECT * FROM services WHERE preset_key='' ORDER BY id")] == services
     assert conn.execute('SELECT count(*) FROM resources').fetchone()[0] == 0
     conn.execute("UPDATE settings SET value='' WHERE key='guide_instagram_url'")
     init_db(conn)

@@ -25,7 +25,7 @@
       <a href="/services?kind=stay&amp;lang={{ lang }}">{{ tr('Guesthouse', 'სასტუმრო') }}</a>
       <a href="/services?kind=taxi&amp;lang={{ lang }}">{{ tr('Taxi & transfers', 'ტაქსი და ტრანსფერი') }}</a>
       <a href="/about?lang={{ lang }}">{{ tr('Our place', 'ჩვენ შესახებ') }}</a>
-      <a class="language-link" href="{{ request.path }}?lang={{ 'ka' if lang == 'en' else 'en' }}{% if request.args.get('kind') %}&amp;kind={{ request.args.get('kind') }}{% endif %}" lang="{{ 'ka' if lang == 'en' else 'en' }}" aria-label="{{ 'Switch to Georgian' if lang == 'en' else 'Switch to English' }}">{{ 'ქარ' if lang == 'en' else 'EN' }}</a>
+      <a class="language-link" href="{{ request.path }}?lang={{ 'ka' if lang == 'en' else 'en' }}{% for param in ['kind','region','activity','duration','month'] %}{% if request.args.get(param) %}&amp;{{ param }}={{ request.args.get(param)|urlencode }}{% endif %}{% endfor %}" lang="{{ 'ka' if lang == 'en' else 'en' }}" aria-label="{{ 'Switch to Georgian' if lang == 'en' else 'Switch to English' }}">{{ 'ქარ' if lang == 'en' else 'EN' }}</a>
       <a class="button button-small" href="/request?lang={{ lang }}">{{ tr('Plan your visit', 'დაგეგმეთ ვიზიტი') }} <span aria-hidden="true">↗</span></a>
     </nav>
   </header>
