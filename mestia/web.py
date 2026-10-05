@@ -19,6 +19,7 @@ from flask import (abort, current_app, flash, g, make_response, redirect,
 from . import get_db
 from . import domain
 from .business_content import instagram_profile, whatsapp_business_link, whatsapp_contact
+from .destinations import get_destination_slides
 from .security import csrf_token, validate_csrf, check_password, verify_totp, rate_limit
 
 TBILISI = ZoneInfo('Asia/Tbilisi')
@@ -213,6 +214,9 @@ def register_routes(app):
         if g.user and not hmac.compare_digest(session.get('credential_fingerprint', ''), hashlib.sha256(g.user['password_hash'].encode()).hexdigest()):
             session.pop('user_id', None)
             g.user = None
+        if g.user and app.config['REQUIRE_TOTP'] and session.get('auth_factor') != 'totp':
+            session.pop('user_id', None)
+            g.user = None
         if request.method == 'POST':
             validate_csrf()
         if request.endpoint != 'static' and not request.path.startswith('/media/'):
@@ -220,7 +224,9 @@ def register_routes(app):
 
     @app.context_processor
     def context():
-        return dict(settings=settings_data(), lang=g.get('lang', 'en'), user=g.get('user'),
+        data = settings_data()
+        return dict(settings=data, destination_slides=get_destination_slides(data),
+                    lang=g.get('lang', 'en'), user=g.get('user'),
                     csrf_token=csrf_token, tr=lambda en, ka: ka if g.get('lang') == 'ka' else en)
 
     @app.after_request
@@ -383,18 +389,22 @@ def register_routes(app):
                 abort(429, description='Too many sign-in attempts. Try again in 15 minutes.')
             user = row('SELECT * FROM users WHERE email=? AND active=1', (email,))
             valid = user and check_password(user['password_hash'], request.form.get('password', ''))
-            step = verify_totp(user['totp_secret'], request.form.get('otp', ''), user['totp_last_step']) if valid and user['totp_secret'] else None
-            if step is not None:
-                changed = get_db().execute('UPDATE users SET totp_last_step=? WHERE id=? AND (totp_last_step IS NULL OR totp_last_step<?)', (step, user['id'], step)).rowcount
-                if changed:
-                    session.clear()
-                    session['user_id'] = user['id']
-                    session['credential_fingerprint'] = hashlib.sha256(user['password_hash'].encode()).hexdigest()
-                    session.permanent = True
-                    g.user = user
-                    audit('login', 'user', user['id'])
-                    return redirect('/admin')
-            error = 'Email, password or authenticator code is incorrect.'
+            authenticated = bool(valid)
+            if valid and app.config['REQUIRE_TOTP']:
+                step = verify_totp(user['totp_secret'], request.form.get('otp', ''), user['totp_last_step']) if user['totp_secret'] else None
+                authenticated = False
+                if step is not None:
+                    authenticated = bool(get_db().execute('UPDATE users SET totp_last_step=? WHERE id=? AND (totp_last_step IS NULL OR totp_last_step<?)', (step, user['id'], step)).rowcount)
+            if authenticated:
+                session.clear()
+                session['user_id'] = user['id']
+                session['credential_fingerprint'] = hashlib.sha256(user['password_hash'].encode()).hexdigest()
+                session['auth_factor'] = 'totp' if app.config['REQUIRE_TOTP'] else 'password'
+                session.permanent = True
+                g.user = user
+                audit('login', 'user', user['id'])
+                return redirect('/admin')
+            error = 'Email, password or authenticator code is incorrect.' if app.config['REQUIRE_TOTP'] else 'Email or password is incorrect.'
         return render_template('login.html', error=error), (401 if error else 200)
 
     @app.post('/admin/logout')
@@ -778,6 +788,18 @@ def register_admin(app):
                 values['whatsapp_link'] = whatsapp_business_link(values['whatsapp_link'])
                 for key in ('guesthouse_instagram_url', 'guide_instagram_url'):
                     values[key] = instagram_profile(values[key])
+                for number in range(1, 4):
+                    for field in ('title_en', 'title_ka', 'subtitle_en', 'subtitle_ka'):
+                        key = f'destination_{field}_{number}'
+                        limit = 100 if field.startswith('title') else 240
+                        values[key] = f.get(key, current.get(key, '')).strip()[:limit]
+                    upload = request.files.get(f'destination_photo_{number}')
+                    reset = f.get(f'destination_reset_{number}') == 'on'
+                    if reset and upload and upload.filename:
+                        raise ValueError(f'Slide {number}: choose a new photo or restore the illustration, not both.')
+                    photo = save_image(upload)
+                    if photo or reset:
+                        values[f'destination_image_{number}'] = photo or ''
                 photo=save_image(request.files.get('hero_image'))
                 if photo: values['hero_image']=photo
                 get_db().execute('BEGIN IMMEDIATE')

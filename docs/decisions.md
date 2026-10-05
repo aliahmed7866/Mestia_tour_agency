@@ -22,6 +22,7 @@ Baseline: **Mestia Travel and Guesthouse Web App**, dated 5 October 2026, suppli
 | Private tours initially | A tour reserves its guide exclusively. Shared departures with separately sold seats need a dedicated later workflow. |
 | Supplied service catalogue | The owner supplied five card services and the Riverside Svaneti guesthouse profile on 5 October 2026. These are enquiry-only listings with no invented prices, inventory or availability. “Mestia Travel” remains a provisional umbrella name. |
 | Owner and dispatcher staff roles | Individual access for the current operation without implementing the full future partner marketplace. |
+| Password-only staff login for now | Requested by the owner on 5 October 2026. Authenticator enrollment remains available through `MESTIA_REQUIRE_TOTP=1`; passwords, role checks, CSRF protection and throttling remain required. |
 
 These are reversible implementation choices, not confirmation of business facts.
 
@@ -45,6 +46,8 @@ The owner chose port **8095** after finding port 8000 occupied. Existing install
 
 The supplied card lists Private Transfers, Mountain Tours, City Trips, Airport Pickup and 4x4 Off-Road Adventures. Its QR decodes to `https://wa.me/qr/DWVZTCF73QY5L1`. The visible printed digits are 593282478; the country prefix is covered, so the application uses the exact QR destination rather than inferring a full phone number.
 
-The supplied Instagram link and screenshot identify **Riverside Svaneti Guest House**, profile `https://www.instagram.com/riverside_svaneti/`. The screenshot describes river and mountain views, camps/events, breakfast and dinner, and free pickup from Mestia. Rooms, occupancy, rates, meal inclusions and pickup timing still need to be agreed by the host. Only the guesthouse link was provided; the guide profile remains unset. No Instagram photos were copied or scraped.
+The supplied Instagram link and screenshot identify **Riverside Svaneti Guest House**, profile `https://www.instagram.com/riverside_svaneti/`. The screenshot describes river and mountain views, camps/events, breakfast and dinner, and free pickup from Mestia. Rooms, occupancy, rates, meal inclusions and pickup timing still need to be agreed by the host. The owner subsequently supplied the guide's profile, `https://www.instagram.com/guledaniakaki/`. No Instagram photos were copied or scraped.
+
+The owner also requested SVG mountain artwork and destination image placeholders that become a slideshow. Illustrated placeholders are clearly distinguished from real destination photography; the owner can replace them with approved images in Admin Settings.
 
 This content update is transactional and runs once, preserving existing nonempty settings, matching owner-created services, and later operator edits. It creates no rooms, vehicles, drivers, prices or bookings.

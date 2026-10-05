@@ -115,9 +115,112 @@ def test_cli_enrollment_must_finish_before_account_is_saved(tmp_path, monkeypatc
     inputs = iter(["strong-password-for-owner", "strong-password-for-owner", "not-an-otp"])
     monkeypatch.setattr(cli, "getpass", lambda prompt: next(inputs))
     with pytest.raises(ValueError, match="Authenticator code"):
-        cli._manage_user(conn, SimpleNamespace(command="create-user", email="owner@example.org", role=None))
+        cli._manage_user(conn, SimpleNamespace(command="create-user", email="owner@example.org", role=None), require_totp=True)
     assert conn.execute("SELECT count(*) FROM users").fetchone()[0] == 0
     conn.close()
+
+
+def test_cli_creates_password_only_account_without_authenticator(tmp_path, monkeypatch, capsys):
+    from mestia import __main__ as cli
+    conn = connect(tmp_path / "app.sqlite3")
+    init_db(conn)
+    inputs = iter(["strong-password-for-owner", "strong-password-for-owner"])
+    monkeypatch.setattr(cli, "getpass", lambda prompt: next(inputs))
+    cli._manage_user(conn, SimpleNamespace(command="create-user", email=" OWNER@example.org ", role=None))
+    user = conn.execute("SELECT * FROM users").fetchone()
+    assert user["email"] == "owner@example.org"
+    assert user["active"] == 1 and user["role"] == "owner"
+    assert check_password(user["password_hash"], "strong-password-for-owner")
+    assert user["totp_secret"] is None and user["totp_last_step"] is None
+    output = capsys.readouterr().out
+    assert "Sign in with your email and password" in output
+    assert "Authenticator URI" not in output
+    conn.close()
+
+
+def test_password_only_reset_preserves_enrollment_for_later(tmp_path, monkeypatch):
+    from mestia import __main__ as cli
+    conn = connect(tmp_path / "app.sqlite3")
+    init_db(conn)
+    secret = new_totp_secret()
+    conn.execute("""INSERT INTO users(email,password_hash,totp_secret,totp_last_step,role)
+                 VALUES (?,?,?,?,?)""", ("owner@example.org", "original", secret, 42, "owner"))
+    inputs = iter(["new-password-for-owner", "new-password-for-owner"])
+    monkeypatch.setattr(cli, "getpass", lambda prompt: next(inputs))
+    cli._manage_user(conn, SimpleNamespace(command="reset-user", email="owner@example.org", role=None))
+    user = conn.execute("SELECT * FROM users").fetchone()
+    assert check_password(user["password_hash"], "new-password-for-owner")
+    assert user["totp_secret"] == secret and user["totp_last_step"] == 42
+    conn.close()
+
+
+def test_opt_in_enrollment_records_verified_secret_and_counter(tmp_path, monkeypatch):
+    from mestia import __main__ as cli, security
+    monkeypatch.setattr(security.time, "time", lambda: 1_800_000_000)
+    conn = connect(tmp_path / "app.sqlite3")
+    init_db(conn)
+    secret = new_totp_secret()
+    monkeypatch.setattr(cli, "new_totp_secret", lambda: secret)
+    inputs = iter(["strong-password-for-owner", "strong-password-for-owner", totp_code(secret)])
+    monkeypatch.setattr(cli, "getpass", lambda prompt: next(inputs))
+    cli._manage_user(conn, SimpleNamespace(command="create-user", email="owner@example.org", role=None), require_totp=True)
+    user = conn.execute("SELECT * FROM users").fetchone()
+    assert user["totp_secret"] == secret
+    assert user["totp_last_step"] is not None
+    assert verify_totp(secret, totp_code(secret), user["totp_last_step"]) is None
+    conn.close()
+
+
+def test_failed_opt_in_reset_preserves_existing_credentials(tmp_path, monkeypatch):
+    from mestia import __main__ as cli
+    conn = connect(tmp_path / "app.sqlite3")
+    init_db(conn)
+    secret = new_totp_secret()
+    conn.execute("""INSERT INTO users(email,password_hash,totp_secret,totp_last_step,role)
+                 VALUES (?,?,?,?,?)""", ("owner@example.org", "original", secret, 42, "owner"))
+    inputs = iter(["new-password-for-owner", "new-password-for-owner", "invalid"])
+    monkeypatch.setattr(cli, "getpass", lambda prompt: next(inputs))
+    with pytest.raises(ValueError, match="Authenticator code"):
+        cli._manage_user(conn, SimpleNamespace(command="reset-user", email="owner@example.org", role=None), require_totp=True)
+    user = conn.execute("SELECT * FROM users").fetchone()
+    assert user["password_hash"] == "original"
+    assert user["totp_secret"] == secret and user["totp_last_step"] == 42
+    conn.close()
+
+
+@pytest.mark.parametrize("setting, required", [(None, False), ("0", False), ("1", True)])
+def test_app_and_cli_use_configured_authenticator_requirement(tmp_path, monkeypatch, setting, required):
+    import mestia
+    from mestia import __main__ as cli
+    monkeypatch.setattr(mestia, "load_env", lambda: None)
+    monkeypatch.delenv("MESTIA_REQUIRE_TOTP", raising=False)
+    if setting is not None:
+        monkeypatch.setenv("MESTIA_REQUIRE_TOTP", setting)
+    app = mestia.create_app({"SECRET_KEY": "test-secret-32-characters-or-longer",
+                             "DATABASE": str(tmp_path / "app.sqlite3"),
+                             "MEDIA_DIR": str(tmp_path / "uploads")})
+    assert app.config["REQUIRE_TOTP"] is required
+    monkeypatch.setattr(mestia, "create_app", lambda: app)
+    observed = []
+    monkeypatch.setattr(cli, "_manage_user", lambda conn, args, require_totp: observed.append(require_totp))
+    assert cli.main(["create-user", "--email", "owner@example.org"]) == 0
+    assert observed == [required]
+
+
+def test_preflight_accepts_password_only_owner_unless_totp_enabled(tmp_path):
+    from mestia import __main__ as cli
+    dbpath, media = tmp_path / "app.sqlite3", tmp_path / "uploads"
+    media.mkdir()
+    conn = connect(dbpath)
+    init_db(conn)
+    conn.execute("INSERT INTO users(email,password_hash,role) VALUES (?,?,?)",
+                 ("owner@example.org", "existing-password-hash", "owner"))
+    conn.close()
+    app = SimpleNamespace(config={"SECRET_KEY": "test-secret-32-characters-or-longer",
+                                  "DATABASE": str(dbpath), "MEDIA_DIR": str(media), "REQUIRE_TOTP": False})
+    assert cli.deployment_check(app)[0] == []
+    app.config["REQUIRE_TOTP"] = True
+    assert any("authenticator enrollment" in error for error in cli.deployment_check(app)[0])
 
 
 def test_create_user_never_silently_resets_existing_credentials(tmp_path):

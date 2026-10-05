@@ -2,7 +2,7 @@
 
 ## Before accepting real enquiries
 
-Create an individual owner account with the CLI and enroll its secret in an authenticator app. Store recovery access securely under the business owner's control. Do not share one login among staff. Owners manage business settings, catalogue and permissions; dispatchers receive a narrower operational role. Partner records do not create partner logins.
+Create an individual owner account with the CLI and choose a password of at least 12 characters. Staff use email and password by default; authenticator enrollment is optional through the deployment setting described in the [Termux guide](termux.md#optional-authenticator-sign-in). Store recovery access securely under the business owner's control. Do not share one login among staff. Owners manage business settings, catalogue and permissions; dispatchers receive a narrower operational role. Partner records do not create partner logins.
 
 In the admin workspace:
 
@@ -14,6 +14,10 @@ In the admin workspace:
 6. Make a supervised test enquiry and complete quoting, acceptance, payment recording, confirmation, cancellation and backup restoration with your own test details before public launch.
 
 Use rooms as individual room resources for exclusive room-night inventory. Record a stay as local check-in and check-out dates in Asia/Tbilisi; departure day is not an additional occupied night. Scheduled tours and taxis use local dates and times. Tours initially reserve a guide exclusively for a private trip; do not sell independently bookable shared departure seats through this pilot. Keep realistic buffers for getting between jobs.
+
+### Homepage destination slideshow
+
+In Admin Settings, add approved destination photos to the three slideshow slots and edit their English and Georgian titles and captions. An empty slot displays mountain artwork as an illustration placeholder. Upload JPEG, PNG or WebP files, each no larger than 6 MB; the whole form must stay under 8 MB, so upload large photos one at a time. Use images you have permission to publish and describe the pictured destination accurately. These homepage images do not create bookable services or establish availability.
 
 ## An enquiry is not a reservation
 

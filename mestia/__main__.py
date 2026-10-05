@@ -86,7 +86,7 @@ def _enroll(email):
     return secret, step
 
 
-def _manage_user(conn, args):
+def _manage_user(conn, args, require_totp=False):
     email = args.email.strip().lower()
     if len(email) > 254 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
         raise ValueError("Enter a valid email address.")
@@ -96,7 +96,7 @@ def _manage_user(conn, args):
     if args.command == "reset-user" and not existing:
         raise ValueError("No user with that email exists.")
     password = _password()
-    secret, step = _enroll(email)
+    secret, step = _enroll(email) if require_totp else (None, None)
     role = args.role or (existing["role"] if existing else "owner")
     conn.execute("BEGIN IMMEDIATE")
     try:
@@ -106,8 +106,13 @@ def _manage_user(conn, args):
                 raise ValueError("User no longer exists.")
             if role != "owner":
                 _protect_last_owner(conn, current)
-            conn.execute("""UPDATE users SET password_hash=?,totp_secret=?,totp_last_step=?,role=?,active=1
-                         WHERE id=?""", (password, secret, step, role, existing["id"]))
+            if require_totp:
+                conn.execute("""UPDATE users SET password_hash=?,totp_secret=?,totp_last_step=?,role=?,active=1
+                             WHERE id=?""", (password, secret, step, role, existing["id"]))
+            else:
+                # Keep any existing enrollment for a later opt-in to two-factor login.
+                conn.execute("""UPDATE users SET password_hash=?,role=?,active=1 WHERE id=?""",
+                             (password, role, existing["id"]))
         else:
             conn.execute("""INSERT INTO users(email,password_hash,totp_secret,totp_last_step,role)
                          VALUES (?,?,?,?,?)""", (email, password, secret, step, role))
@@ -116,7 +121,10 @@ def _manage_user(conn, args):
         conn.execute("ROLLBACK")
         raise
     print(f"{'Reset' if existing else 'Created'} {role} account {email}.")
-    print("Wait for the next authenticator code before signing in. Store your credentials securely.")
+    if require_totp:
+        print("Wait for the next authenticator code before signing in. Store your credentials securely.")
+    else:
+        print("Sign in with your email and password. Store your credentials securely.")
 
 
 def _protect_last_owner(conn, user):
@@ -163,9 +171,13 @@ def deployment_check(app):
                 errors.append("Database integrity check failed.")
             if conn.execute("PRAGMA foreign_key_check").fetchone():
                 errors.append("Database contains invalid references.")
-            owners = conn.execute("SELECT count(*) FROM users WHERE role='owner' AND active=1 AND totp_secret IS NOT NULL").fetchone()[0]
+            owner_query = "SELECT count(*) FROM users WHERE role='owner' AND active=1"
+            if config.get("REQUIRE_TOTP"):
+                owner_query += " AND totp_secret IS NOT NULL AND totp_secret<>''"
+            owners = conn.execute(owner_query).fetchone()[0]
             if not owners:
-                errors.append("Create at least one active owner with authenticator enrollment.")
+                errors.append("Create at least one active owner with authenticator enrollment." if config.get("REQUIRE_TOTP")
+                              else "Create at least one active owner account.")
             settings = dict(conn.execute("SELECT key,value FROM settings"))
             from .business_content import whatsapp_contact
             if not whatsapp_contact(settings)[0]:
@@ -191,8 +203,8 @@ def parser():
     result = argparse.ArgumentParser(description="Mestia Travel administration and Termux server")
     commands = result.add_subparsers(dest="command", required=True)
     commands.add_parser("init-db", help="Create missing database tables without replacing existing data")
-    for name, help_text in (("create-user", "Create an admin with password and authenticator enrollment"),
-                            ("reset-user", "Explicitly replace an existing admin's password and authenticator")):
+    for name, help_text in (("create-user", "Create an admin; enroll an authenticator only if MESTIA_REQUIRE_TOTP=1"),
+                            ("reset-user", "Reset an admin password; re-enroll only if MESTIA_REQUIRE_TOTP=1")):
         user = commands.add_parser(name, help=help_text)
         user.add_argument("--email", required=True)
         user.add_argument("--role", choices=("owner", "dispatcher"), default=None)
@@ -235,7 +247,7 @@ def main(argv=None):
                 if args.command == "disable-user":
                     _disable_user(conn, args.email)
                 else:
-                    _manage_user(conn, args)
+                    _manage_user(conn, args, require_totp=app.config["REQUIRE_TOTP"])
             finally:
                 conn.close()
         elif args.command == "serve":

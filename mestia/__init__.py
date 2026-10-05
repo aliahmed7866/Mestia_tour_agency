@@ -40,6 +40,7 @@ def create_app(test_config=None):
         PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
         MAX_CONTENT_LENGTH=8 * 1024 * 1024,
         TRUST_PROXY=os.environ.get('MESTIA_TRUST_PROXY', '0') == '1',
+        REQUIRE_TOTP=os.environ.get('MESTIA_REQUIRE_TOTP', '0') == '1',
     )
     if test_config:
         app.config.update(test_config)

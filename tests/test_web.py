@@ -4,6 +4,8 @@ These tests use SQLite and rendered form contracts, without external integration
 """
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
+from io import BytesIO
+import base64
 
 import pytest
 
@@ -48,6 +50,7 @@ def app(tmp_path, password_hash):
         'MEDIA_DIR': str(tmp_path / 'media'),
         'SESSION_COOKIE_SECURE': False,
         'TRUST_PROXY': False,
+        'REQUIRE_TOTP': True,
     })
     conn = connect(app.config['DATABASE'])
     for role in ('owner', 'dispatcher'):
@@ -405,3 +408,69 @@ def test_taxi_confirmation_needs_guest_and_driver_acceptance_then_supports_reass
     assert db.execute('SELECT operational_status FROM bookings').fetchone()[0] == 'ready'
     assert db.execute('SELECT count(*) FROM bookings').fetchone()[0] == 1
     assert guest.get(private_url).status_code == 200
+
+
+@pytest.mark.parametrize('enrolled', [False, True])
+def test_password_only_login_and_later_mfa_requirement(app, db, enrolled):
+    app.config['REQUIRE_TOTP'] = False
+    if not enrolled:
+        db.execute("UPDATE users SET totp_secret=NULL,totp_last_step=NULL WHERE role='owner'")
+    client = app.test_client()
+    page = client.get('/admin/login')
+    assert 'otp' not in Controls(page.text).names
+    response = client.post('/admin/login', data={
+        'csrf_token':Controls(page.text).value('csrf_token'),
+        'email':'owner@example.test','password':PASSWORD})
+    assert response.status_code == 302
+    assert client.get('/admin').status_code == 200
+    with client.session_transaction() as session:
+        assert session['auth_factor'] == 'password'
+    # Enabling the optional stronger factor must invalidate a password-only session.
+    app.config['REQUIRE_TOTP'] = True
+    assert client.get('/admin').status_code == 302
+    assert 'otp' in Controls(client.get('/admin/login').text).names
+
+
+def test_password_only_mode_still_rejects_wrong_password_and_missing_csrf(app):
+    app.config['REQUIRE_TOTP'] = False
+    client = app.test_client()
+    page = client.get('/admin/login')
+    assert client.post('/admin/login', data={'email':'owner@example.test','password':PASSWORD}).status_code == 400
+    response = client.post('/admin/login', data={'csrf_token':Controls(page.text).value('csrf_token'),
+        'email':'owner@example.test','password':'wrong-password'})
+    assert response.status_code == 401
+    assert client.get('/admin').status_code == 302
+
+
+def test_destination_photos_can_be_replaced_preserved_and_reset(app, owner, db):
+    guest = app.test_client()
+    initial = guest.get('/').text
+    assert initial.count('data-destination-slide ') == 3
+    assert initial.count('Photo placeholder · Illustration') == 3
+    assert 'data-destination-showcase' in guest.get('/services?kind=tour').text
+    assert 'data-destination-showcase' not in guest.get('/services?kind=stay').text
+    png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a5ioAAAAASUVORK5CYII=')
+    response = post(owner, '/admin/settings', {
+        'destination_photo_1': (BytesIO(png), 'destination.png'),
+        'destination_title_en_1': 'Our destination photograph',
+        'destination_subtitle_en_1': '<script>unsafe caption</script>',
+    })
+    assert response.status_code == 302
+    photo = db.execute("SELECT value FROM settings WHERE key='destination_image_1'").fetchone()[0]
+    assert photo.startswith('/media/') and guest.get(photo).data == png
+    page = guest.get('/').text
+    assert photo in page and 'Our destination photograph' in page
+    assert page.count('Photo placeholder · Illustration') == 2
+    assert '<script>unsafe caption</script>' not in page
+    assert '&lt;script&gt;unsafe caption&lt;/script&gt;' in page
+    # A later settings save must preserve photographs absent from that form.
+    post(owner, '/admin/settings', {'business_name': 'Owner edited name'})
+    assert photo in guest.get('/').text
+    # Uploaded SVGs are rejected; native SVG placeholders remain trusted assets.
+    post(owner, '/admin/settings', {'destination_photo_1': (BytesIO(b'<svg></svg>'), 'unsafe.svg')})
+    assert photo in guest.get('/').text
+    post(owner, '/admin/settings', {'destination_reset_1': 'on'})
+    page = guest.get('/').text
+    assert page.count('Photo placeholder · Illustration') == 3
+    assert '/static/destinations/tower-village.svg' in page
+    assert photo not in page

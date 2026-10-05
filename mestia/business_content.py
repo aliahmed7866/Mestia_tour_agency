@@ -1,14 +1,17 @@
 """Owner-supplied contact and service content, applied once without replacing edits.
 
-Sources: service card and Riverside Svaneti profile screenshot supplied 2026-10-05.
+Sources: service card, Riverside Svaneti profile screenshot and guide profile link
+supplied 2026-10-05.
 No prices, room inventory, schedules, credentials or policies are inferred.
 """
 import re
 from urllib.parse import urlencode, urlsplit
 
 CONTENT_VERSION = '_owner_content_20261005_v1'
+GUIDE_PROFILE_VERSION = '_guide_profile_20261005_v1'
 WHATSAPP_CARD_LINK = 'https://wa.me/qr/DWVZTCF73QY5L1'
 GUESTHOUSE_INSTAGRAM = 'https://www.instagram.com/riverside_svaneti/'
+GUIDE_INSTAGRAM = 'https://www.instagram.com/guledaniakaki/'
 
 
 def instagram_profile(value):
@@ -96,6 +99,23 @@ def apply_owner_content(conn):
                 description_en,details_en,price_minor,currency,published)
                 VALUES(1,?,?,?,?,?,?,NULL,'GEL',1)''', (slug, kind, title, title_ka, description, details))
         conn.execute('INSERT INTO settings(key,value) VALUES (?,?)', (CONTENT_VERSION, 'applied'))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+
+def apply_guide_profile(conn):
+    """Add the supplied guide profile once, preserving existing and later edits."""
+    conn.execute('BEGIN IMMEDIATE')
+    try:
+        if conn.execute('SELECT 1 FROM settings WHERE key=?', (GUIDE_PROFILE_VERSION,)).fetchone():
+            conn.commit()
+            return
+        conn.execute('''INSERT INTO settings(key,value) VALUES ('guide_instagram_url',?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value WHERE trim(settings.value)='' ''',
+            (GUIDE_INSTAGRAM,))
+        conn.execute('INSERT INTO settings(key,value) VALUES (?,?)', (GUIDE_PROFILE_VERSION, 'applied'))
         conn.commit()
     except Exception:
         conn.rollback()

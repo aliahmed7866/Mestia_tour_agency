@@ -1,0 +1,30 @@
+{% if destination_slides %}
+<section class="destination-showcase wrap" data-destination-showcase role="region" aria-roledescription="{{ tr('carousel', 'სლაიდშოუ') }}" aria-label="{{ tr('Svaneti inspiration', 'სვანეთის შთაგონება') }}" data-label-play="{{ tr('Play slideshow', 'სლაიდშოუს ჩართვა') }}" data-label-pause="{{ tr('Pause slideshow', 'სლაიდშოუს შეჩერება') }}" data-slide-label="{{ tr('Slide', 'სლაიდი') }}">
+  <div class="destination-heading">
+    <div><p class="eyebrow">{{ tr('A little inspiration', 'ცოტა შთაგონება') }}</p><h2>{{ tr('Follow your sense of wonder.', 'გაჰყევით შთაგონებას.') }}</h2></div>
+    <p>{{ tr('Big horizons. Quiet corners. Your next mountain story starts with a conversation.', 'უსასრულო ჰორიზონტები. მშვიდი კუთხეები. თქვენი მთის ამბავი საუბრით იწყება.') }}</p>
+  </div>
+  <div class="destination-stage">
+    {% for slide in destination_slides %}
+    <article class="destination-slide{% if loop.first %} is-active{% endif %}" data-destination-slide role="group" aria-roledescription="{{ tr('slide', 'სლაიდი') }}" aria-label="{{ loop.index }} / {{ loop.length }}: {{ tr(slide.title_en, slide.title_ka) }}" aria-hidden="{{ 'false' if loop.first else 'true' }}"{% if not loop.first %} hidden inert{% endif %}>
+      <img class="destination-image" src="{{ slide.image_path }}" alt="{{ tr(slide.alt_en, slide.alt_ka) }}" width="1600" height="1000" loading="{{ 'eager' if loop.first else 'lazy' }}" decoding="async">
+      {% if slide.is_placeholder %}<span class="destination-art-label"><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m2 15 6-10 4 6 2-3 4 7H2Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="m5.7 8.8 2.2.7 1.3-2" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>{{ tr('Photo placeholder · Illustration', 'ფოტოს ადგილი · ილუსტრაცია') }}</span>{% endif %}
+      <div class="destination-caption">
+        <p class="destination-kicker">{{ tr('Svaneti, at your own pace', 'სვანეთი თქვენს რიტმში') }}</p>
+        <h3 data-slide-title>{{ tr(slide.title_en, slide.title_ka) }}</h3>
+        <p class="destination-subtitle">{{ tr(slide.subtitle_en, slide.subtitle_ka) }}</p>
+        {% if slide.href %}<a class="destination-link" href="{{ slide.href }}">{{ tr('Plan a day like this', 'დაგეგმეთ ასეთი დღე') }} <span aria-hidden="true">↗</span></a>{% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% if destination_slides|length > 1 %}
+  <div class="destination-navigation" data-slideshow-controls hidden>
+    <div class="destination-progress"><span class="destination-count" aria-hidden="true"><strong data-slide-current>01</strong><span> / {{ '%02d'|format(destination_slides|length) }}</span></span><div class="destination-dots" role="group" aria-label="{{ tr('Choose a slide', 'აირჩიეთ სლაიდი') }}">{% for slide in destination_slides %}<button type="button" class="destination-dot{% if loop.first %} is-current{% endif %}" data-slide-to="{{ loop.index0 }}" aria-label="{{ tr('Show', 'ჩვენება') }} {{ loop.index }}: {{ tr(slide.title_en, slide.title_ka) }}" aria-current="{{ 'true' if loop.first else 'false' }}"><span></span></button>{% endfor %}</div></div>
+    <div class="destination-actions"><button type="button" class="destination-control destination-play" data-slide-play aria-label="{{ tr('Pause slideshow', 'სლაიდშოუს შეჩერება') }}"><svg class="destination-icon-pause" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4v12M14 4v12" stroke="currentColor" stroke-width="2.5"/></svg><svg class="destination-icon-play" viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 9 6-9 6V4Z" fill="currentColor"/></svg><span data-play-label>{{ tr('Pause slideshow', 'სლაიდშოუს შეჩერება') }}</span></button><button type="button" class="destination-control" data-slide-prev aria-label="{{ tr('Previous slide', 'წინა სლაიდი') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" class="destination-control" data-slide-next aria-label="{{ tr('Next slide', 'შემდეგი სლაიდი') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+  </div>
+  {% endif %}
+  <p class="destination-screen-reader" data-slide-announcement aria-live="polite" aria-atomic="true"></p>
+  <noscript><p class="destination-noscript">{{ tr('Destination inspiration', 'შთაგონება მოგზაურობისთვის') }}: {% for slide in destination_slides %}{{ tr(slide.title_en, slide.title_ka) }}{% if not loop.last %} · {% endif %}{% endfor %}</p></noscript>
+</section>
+{% endif %}

@@ -19,7 +19,7 @@ bash scripts/setup-termux.sh
 bash scripts/start.sh
 ```
 
-Use your own email instead of `you@example.com`. Account creation prompts for a password and authenticator enrollment; there is no default administrator password. Open **http://127.0.0.1:8095** on the same phone, then `/admin` for the owner workspace. Stop with `Ctrl+C`.
+Use your own email instead of `you@example.com`. Account creation asks you to enter and confirm a password of at least 12 characters. Staff sign in with email and password; no authenticator is required by default, and there is no default administrator password. Open **http://127.0.0.1:8095** on the same phone, then `/admin` for the owner workspace. Stop with `Ctrl+C`.
 
 The setup script creates a private random secret in `.env` and initializes `instance/mestia.sqlite3`. Running it again preserves existing configuration and data. Keep both out of Git. After Python package upgrades, an existing virtual environment may need to be recreated; preserve `.env` and `instance/`.
 
@@ -31,7 +31,9 @@ bash scripts/set-port.sh 8095
 bash scripts/start.sh
 ```
 
-On the next startup, the supplied service/contact content is added once; existing operator edits and nonempty contact settings are preserved. The guide’s separate Instagram profile remains unset until supplied.
+On the next startup, the supplied service/contact content is added once; existing operator edits and nonempty contact settings are preserved. The guide's supplied Instagram is [@guledaniakaki](https://www.instagram.com/guledaniakaki/), alongside the Riverside Svaneti guesthouse profile.
+
+Updating and restarting enables password-only login when `MESTIA_REQUIRE_TOTP` is absent or `0`. Existing accounts keep their passwords. If an earlier account setup was cancelled during authenticator enrollment, rerun the `create-user` command above; an unfinished enrollment did not save an account. Optional authenticator setup is documented in [Termux deployment](docs/termux.md#optional-authenticator-sign-in).
 
 The port command preserves the other `.env` settings and secret key, and refuses to change the file if the requested local port is occupied. Choose another unused port with the same command if necessary. An existing `.env` is never replaced by setup, so updating alone keeps its previous port. If you have exported `PORT` in your shell, run `unset PORT` before changing the saved port. Startup prints the address actually in use.
 
@@ -45,7 +47,7 @@ The same setup and start scripts work on Linux with Python 3.11+ and `venv` inst
 - Room-night and shared guide/driver/vehicle conflict checks in database transactions.
 - Manual taxi dispatch, acceptance evidence, reassignment and unavailable-driver outcomes.
 - Separate manual payment records, change/cancellation requests, reminders and audit history.
-- Individual staff accounts with password and authenticator codes, server-side permissions, CSRF protection, request throttling and a form spam trap.
+- Individual staff accounts with passwords and optional authenticator codes, server-side permissions, CSRF protection, request throttling and a form spam trap.
 
 Opening WhatsApp does not send a message or confirm a booking. The supplied QR business link opens the chat; guests must include their request reference manually. If the owner enters a full international WhatsApp number in settings, guest links can prefill the reference. Staff handle chats, verify contact, record payments and complete reminder tasks manually. Tours initially reserve guides exclusively for private trips; a shared-seat departure workflow is later work. There is no WhatsApp inbox sync, automatic messaging, card checkout or accommodation-channel sync. Georgian copy needs a native-speaker review. Do a supervised pilot with your real inventory before launch.
 

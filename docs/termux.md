@@ -17,6 +17,7 @@ Setup generates `.env` only when it does not already exist. It never rotates a w
 | `MESTIA_MEDIA_DIR` | `instance/uploads` | Private local storage for uploaded service photographs. |
 | `MESTIA_HOST` | `127.0.0.1` | Bind only to this phone. |
 | `PORT` | `8095` | Local HTTP port. |
+| `MESTIA_REQUIRE_TOTP` | `0` | Password-only staff login; use `1` to require enrolled authenticator codes. |
 | `MESTIA_SECURE_COOKIES` | `0` | Use `1` for a public site served through HTTPS. |
 | `MESTIA_TRUST_PROXY` | `0` | Use `1` only behind a single trusted proxy connecting from IPv4 `127.0.0.1`. |
 
@@ -88,15 +89,31 @@ For this pilot, take a backup after a day's booking work and before updates. Cho
 
 `--yes` authorizes replacement of the configured database and media; double-check the source path, `MESTIA_DB` and `MESTIA_MEDIA_DIR` before running it. ZIP paths, database integrity and references are checked before replacement. Previous data is retained in adjacent `.pre-restore` paths. Preserve these securely after verifying the restore; a further restore refuses to overwrite them. Restoring a database from an older application version may need the matching application version. Do not casually mix newer schemas with older code. Restore drills should use a separate checkout, database path and media path, away from real operations.
 
+## Optional authenticator sign-in
+
+Staff sign in with email and password by default. Passwords must contain at least 12 characters; there are no shared or default credentials. Previously enrolled accounts also use password-only login while `MESTIA_REQUIRE_TOTP=0` or unset. Enrollment secrets are retained so they can be used again later.
+
+To enable authenticator codes, stop the server and prepare each staff account first. For an existing account, run:
+
+```bash
+MESTIA_REQUIRE_TOTP=1 .venv/bin/python -m mestia reset-user --email you@example.com
+```
+
+Replace the email with that account's address. This prompts for a new password and a working authenticator code, then saves both credentials together. Use `create-user` instead for a new account. Enrollment prints a private setup key and URI; do not share the output. Wait for the next code before signing in because enrollment consumes the current code.
+
+After enrolling the staff who need access, set `MESTIA_REQUIRE_TOTP=1` in `.env`, run `.venv/bin/python -m mestia check`, then restart. Accounts without enrollment cannot sign in while this is enabled. Set it back to `0` and restart to return to password-only login. If you exported this variable in the shell, unset it before relying on the value in `.env`.
+
 ## Account recovery
 
-An owner with trusted shell access to the installation can replace a lost staff password and authenticator enrollment:
+An owner with trusted shell access to the installation can replace a lost staff password:
 
 ```bash
 .venv/bin/python -m mestia reset-user --email you@example.com
 ```
 
-Use the existing account's real email. This deliberately replaces both credentials after the new password and a working authenticator code are entered. Enrollment prints a private setup key and URI in the terminal; do not share that output. Wait for the next authenticator code before logging in because the enrollment code has already been used. Protect access to the phone and Termux shell as owner-level access. There are no emailed reset links or recovery-code service in this pilot.
+Use the existing account's real email. With the default configuration this asks only for a new password and confirmation, preserves any existing authenticator enrollment, and invalidates that account's earlier sessions. With `MESTIA_REQUIRE_TOTP=1`, it also replaces the authenticator enrollment after verifying a code. An unsuccessful enrollment leaves existing credentials unchanged.
+
+If earlier setup was cancelled before enrollment finished, no account was created. Use `create-user` with your email to finish setup under the current password-only default. Protect access to the phone and Termux shell as owner-level access. There are no emailed reset links or recovery-code service in this pilot.
 
 ## Update the application
 

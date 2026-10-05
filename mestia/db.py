@@ -148,8 +148,9 @@ CREATE INDEX IF NOT EXISTS quotes_expiry ON quotes(status,expires_at);
 def init_db(conn):
     conn.executescript(SCHEMA)
     seed_defaults(conn)
-    from .business_content import apply_owner_content
+    from .business_content import apply_guide_profile, apply_owner_content
     apply_owner_content(conn)
+    apply_guide_profile(conn)
 
 
 def seed_defaults(conn):

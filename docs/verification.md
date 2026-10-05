@@ -2,9 +2,9 @@
 
 Implementation checked in the development Linux environment on 5 October 2026.
 
-- 47 automated tests pass: 19 booking-domain tests, 16 security/configuration/backup tests, 9 HTTP integration tests and 3 business-content upgrade/contact tests.
+- 63 automated tests pass: 19 booking-domain tests, 24 security/configuration/backup tests, 13 HTTP integration tests and 7 business-content upgrade/contact tests.
 - Checks include concurrent final-room allocation, whole room-night boundaries, shared-person and vehicle conflicts, travel buffers, expired holds and driver offers, stale quote acceptance, pending/verified/voided payments, refund limits, quote snapshots, guest links and rotation, taxi acceptance and reassignment, staff access restrictions, TOTP replay prevention, CSRF and backup restoration.
-- Public and admin templates render through the Flask test client. Both JavaScript files pass Node syntax checks; shell scripts pass Bash syntax checks.
+- Public and admin templates render through the Flask test client. All three JavaScript files pass Node syntax checks; shell scripts pass Bash syntax checks.
 - An isolated Linux setup smoke test confirmed random secret creation, restrictive file permissions, setup rerun data preservation and ZIP backup creation.
 - MarkupSafe's source package built successfully without a C compiler, using its pure-Python fallback. The tzdata dependency provides timezone information if Android's system database is not found.
 
@@ -20,3 +20,7 @@ bash scripts/test.sh
 The repository includes GitHub Actions test configuration. A local test result is not a claim that hosted CI or a deployment has succeeded.
 
 The port/contact update was also smoke-tested with Waitress actually serving on `127.0.0.1:8095`: the health endpoint responded, and the homepage contained the exact WhatsApp QR destination and Riverside Svaneti Instagram URL. The temporary server was then stopped. Existing configuration/content preservation and rejection of an occupied port are covered by automated tests. This does not establish that port 8095 is free on the user’s phone; the configuration command checks it there.
+
+The destination/authentication update additionally checks password-only sign-in for enrolled and unenrolled users, opt-in authenticator enrollment and replay protection, invalidation of password-only sessions when TOTP is required again, and once-only guide-profile migration without overwriting owner edits. HTTP tests exercise photo upload, persistence across settings saves, SVG-upload rejection, escaped captions and restoration of illustration placeholders.
+
+Three original SVG scenes were parsed, rasterized and visually reviewed. Slideshow controls passed a deterministic DOM/timer harness for automatic advance, manual navigation, dots, keyboard controls, pause/resume, hover/focus/tab visibility handling, reduced-motion preferences and hidden-slide focus protection. This harness is not a real browser/device layout test.

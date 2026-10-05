@@ -4,7 +4,8 @@ from datetime import timedelta
 import pytest
 
 from mestia import create_app, domain
-from mestia.business_content import (WHATSAPP_CARD_LINK,
+from mestia.business_content import (GUIDE_INSTAGRAM, WHATSAPP_CARD_LINK,
+                                    apply_owner_content,
                                     instagram_profile, whatsapp_business_link)
 from mestia.db import SCHEMA, connect, init_db, seed_defaults
 
@@ -44,6 +45,7 @@ def test_contact_links_render_and_qr_does_not_claim_to_prefill_guest_reference(t
         assert page.status_code == 200
         assert WHATSAPP_CARD_LINK in page.text
         assert 'https://www.instagram.com/riverside_svaneti/' in page.text
+        assert GUIDE_INSTAGRAM in page.text
     page = client.get('/booking/'+e['guest_token'])
     assert page.status_code == 200
     assert WHATSAPP_CARD_LINK in page.text
@@ -53,6 +55,39 @@ def test_contact_links_render_and_qr_does_not_claim_to_prefill_guest_reference(t
     page = client.get('/booking/'+e['guest_token'])
     assert 'https://wa.me/995555123456?text=' in page.text
     assert 'WhatsApp will open with your reference' in page.text
+    conn.close()
+
+
+@pytest.mark.parametrize('previous_profile', [None, '', '   '])
+def test_guide_profile_upgrades_existing_content_once(tmp_path, previous_profile):
+    conn = connect(tmp_path / 'previous-content.sqlite3')
+    conn.executescript(SCHEMA)
+    seed_defaults(conn)
+    apply_owner_content(conn)
+    if previous_profile is None:
+        conn.execute("DELETE FROM settings WHERE key='guide_instagram_url'")
+    else:
+        conn.execute("UPDATE settings SET value=? WHERE key='guide_instagram_url'", (previous_profile,))
+    services = [tuple(row) for row in conn.execute('SELECT * FROM services ORDER BY id')]
+    init_db(conn)
+    assert conn.execute("SELECT value FROM settings WHERE key='guide_instagram_url'").fetchone()[0] == GUIDE_INSTAGRAM
+    assert [tuple(row) for row in conn.execute('SELECT * FROM services ORDER BY id')] == services
+    assert conn.execute('SELECT count(*) FROM resources').fetchone()[0] == 0
+    conn.execute("UPDATE settings SET value='' WHERE key='guide_instagram_url'")
+    init_db(conn)
+    assert conn.execute("SELECT value FROM settings WHERE key='guide_instagram_url'").fetchone()[0] == ''
+    conn.close()
+
+
+def test_guide_profile_upgrade_preserves_owner_selected_profile(tmp_path):
+    conn = connect(tmp_path / 'edited-profile.sqlite3')
+    conn.executescript(SCHEMA)
+    seed_defaults(conn)
+    apply_owner_content(conn)
+    chosen_profile = 'https://www.instagram.com/owner_selected_guide/'
+    conn.execute("UPDATE settings SET value=? WHERE key='guide_instagram_url'", (chosen_profile,))
+    init_db(conn)
+    assert conn.execute("SELECT value FROM settings WHERE key='guide_instagram_url'").fetchone()[0] == chosen_profile
     conn.close()
 
 
