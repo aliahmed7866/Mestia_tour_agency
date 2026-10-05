@@ -1,0 +1,10 @@
+[project]
+name = "mestia-travel"
+version = "0.1.0"
+description = "A small tourism booking and dispatch application for Mestia"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="{{ lang|default('en') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#263d32">
+  <meta name="description" content="{{ tr('Plan a mountain escape in Mestia, Svaneti. Request guided tours, a guesthouse stay and local transfers in one place.', 'დაგეგმეთ მოგზაურობა მესტიაში, სვანეთში. მოითხოვეთ ტური, საოჯახო სასტუმროში განთავსება და ტრანსფერი.') }}">
+  <title>{% block title %}{{ settings.get('business_name') or 'Mestia' }} · {{ tr('Svaneti, Georgia', 'სვანეთი, საქართველო') }}{% endblock %}</title>
+  <link rel="icon" href="/static/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <a class="skip-link" href="#main">{{ tr('Skip to content', 'შინაარსზე გადასვლა') }}</a>
+  <div class="location-bar">{{ tr('Mestia, Svaneti', 'მესტია, სვანეთი') }} <span aria-hidden="true">✦</span> {{ tr('Georgia', 'საქართველო') }}</div>
+  <header class="site-header">
+    <a class="brand" href="/?lang={{ lang }}" aria-label="{{ settings.get('business_name') or 'Mestia' }} · {{ tr('Home', 'მთავარი') }}">
+      <svg class="brand-mark" viewBox="0 0 50 42" fill="none" aria-hidden="true"><path d="M2 36 17 12l8 11L35 5l13 31H2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m11 22 6 4 4-8M29 16l6 7 5-7M2 41h46" stroke="currentColor" stroke-width="1.5"/></svg>
+      <span>{{ settings.get('business_name') or 'Mestia' }}<small>{{ tr('Mountain days. Warm welcomes.', 'მთის დღეები. თბილი დახვედრა.') }}</small></span>
+    </a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">{{ tr('Menu', 'მენიუ') }} <span aria-hidden="true">☰</span></button>
+    <nav id="site-nav" class="site-nav" aria-label="{{ tr('Main navigation', 'მთავარი ნავიგაცია') }}">
+      <a href="/services?kind=tour&amp;lang={{ lang }}">{{ tr('Tours', 'ტურები') }}</a>
+      <a href="/services?kind=stay&amp;lang={{ lang }}">{{ tr('Guesthouse', 'სასტუმრო') }}</a>
+      <a href="/services?kind=taxi&amp;lang={{ lang }}">{{ tr('Taxi & transfers', 'ტაქსი და ტრანსფერი') }}</a>
+      <a href="/about?lang={{ lang }}">{{ tr('Our place', 'ჩვენ შესახებ') }}</a>
+      <a class="language-link" href="{{ request.path }}?lang={{ 'ka' if lang == 'en' else 'en' }}{% if request.args.get('kind') %}&amp;kind={{ request.args.get('kind') }}{% endif %}" lang="{{ 'ka' if lang == 'en' else 'en' }}" aria-label="{{ 'Switch to Georgian' if lang == 'en' else 'Switch to English' }}">{{ 'ქარ' if lang == 'en' else 'EN' }}</a>
+      <a class="button button-small" href="/request?lang={{ lang }}">{{ tr('Plan your visit', 'დაგეგმეთ ვიზიტი') }} <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
+  {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="wrap flash-stack" role="status">{% for category, message in messages %}<p class="notice {{ 'notice-error' if category == 'error' else '' }}">{{ message }}</p>{% endfor %}</div>{% endif %}{% endwith %}
+  <main id="main">{% block content %}{% endblock %}</main>
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div><a class="footer-brand" href="/?lang={{ lang }}">{{ settings.get('business_name') or 'Mestia' }}</a><p>{{ tr('A little closer to the mountains.', 'მთებთან უფრო ახლოს.') }}<br>{{ tr('Mestia · Svaneti · Georgia', 'მესტია · სვანეთი · საქართველო') }}</p></div>
+      <div><h2>{{ tr('Make yourself at home', 'იგრძენით თავი შინ') }}</h2><a href="/services?kind=tour&amp;lang={{ lang }}">{{ tr('Explore tours', 'აღმოაჩინეთ ტურები') }}</a><a href="/services?kind=stay&amp;lang={{ lang }}">{{ tr('Stay with us', 'დარჩით ჩვენთან') }}</a><a href="/services?kind=taxi&amp;lang={{ lang }}">{{ tr('Taxi & transfers', 'ტაქსი და ტრანსფერი') }}</a></div>
+      <div><h2>{{ tr('Let’s plan your visit', 'დაგეგმეთ თქვენი ვიზიტი') }}</h2>{% if settings.get('email') %}<a href="mailto:{{ settings.email }}">{{ settings.email }}</a>{% endif %}{% if settings.get('address') %}<p>{{ settings.address }}</p>{% endif %}{% if settings.get('hours') %}<p>{{ settings.hours }}</p>{% endif %}<a href="/request?lang={{ lang }}">{{ tr('Send an enquiry', 'გამოგვიგზავნეთ მოთხოვნა') }} ↗</a></div>
+    </div>
+    <div class="wrap footer-bottom"><span>{{ tr('Made for mountain days.', 'მთაში გატარებული დღეებისთვის.') }}</span><div><a href="/terms?lang={{ lang }}">{{ tr('Booking terms', 'დაჯავშნის პირობები') }}</a><a href="/privacy?lang={{ lang }}">{{ tr('Privacy', 'კონფიდენციალურობა') }}</a><a href="/admin/login">{{ tr('Staff sign in', 'თანამშრომლის შესვლა') }}</a></div></div>
+  </footer>
+</body>
+</html>
