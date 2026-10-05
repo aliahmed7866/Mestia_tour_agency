@@ -303,7 +303,7 @@ def test_owner_can_manage_catalogue_settings_and_availability_without_changing_q
         'currency': 'GEL', 'published': 'on', 'capacity': '2',
     }
     post(owner, '/admin/services', service_data)
-    service_id = db.execute('SELECT id FROM services').fetchone()[0]
+    service_id = db.execute("SELECT id FROM services WHERE title_en='Testing stay'").fetchone()[0]
     assert 'Testing stay' in app.test_client().get(f'/services/{service_id}').text
     post(owner, '/admin/resources', {
         'name': 'Owner room', 'provider_id': str(provider_id), 'kind': 'room',

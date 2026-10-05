@@ -148,10 +148,12 @@ CREATE INDEX IF NOT EXISTS quotes_expiry ON quotes(status,expires_at);
 def init_db(conn):
     conn.executescript(SCHEMA)
     seed_defaults(conn)
+    from .business_content import apply_owner_content
+    apply_owner_content(conn)
 
 
 def seed_defaults(conn):
-    """Only placeholder business settings; no invented services or availability."""
+    """Basic settings and owner provider; supplied content is applied separately."""
     defaults = {
         'business_name': 'Mestia Travel', 'business_name_ka': '',
         'whatsapp_number': '', 'contact_email': '', 'address': '',

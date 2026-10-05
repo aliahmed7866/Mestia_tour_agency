@@ -51,4 +51,4 @@ if (( $# == 1 )); then
 else
     printf '\nCreate the owner account and enroll an authenticator:\n  .venv/bin/python -m mestia create-user --email YOUR_EMAIL\n'
 fi
-printf '\nStart the app:\n  bash scripts/start.sh\nThen open http://127.0.0.1:8000 on this phone.\n'
+printf '\nStart the app:\n  bash scripts/start.sh\nOpen the address printed at startup on this phone (new installs use port 8095).\nTo change an existing port first: bash scripts/set-port.sh 8095\n'

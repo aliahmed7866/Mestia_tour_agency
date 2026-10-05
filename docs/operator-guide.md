@@ -58,3 +58,9 @@ A pending receipt that never settles can be voided with an explanation; it remai
 A person who both guides and drives must use the same resource record for both roles. Guide and driver resource types can be used in either role, so overlapping tours and taxi work share the same availability and travel buffer. Do not create a second resource record for the same person.
 
 Each quote supports one taxi leg. Additional legs need separate enquiries and quotes. For confirmed booking changes, record the guest request, agree the replacement, then cancel and requote with fresh acceptance; the current booking remains committed until you cancel it. There is no automatic amendment or refund.
+
+### Supplied service card and social contacts
+
+The website now includes the supplied card's five service categories and Riverside Svaneti Guest House. Edit or pause them in Services. These listings have no price or inventory until you configure them. For a 4x4 tour, reserve the appropriate guide/driver and vehicle for its entire route, including travel buffers.
+
+Settings accepts either a full international WhatsApp number or the supplied QR business link. A configured number takes priority and allows guest-reference prefill. The QR destination cannot promise a prefilled message; guests are shown the reference to include manually. The guesthouse and guide Instagram profile fields are separate. Keep the guide field blank until its exact profile is confirmed.

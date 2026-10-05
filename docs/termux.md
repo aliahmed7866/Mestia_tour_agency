@@ -16,17 +16,30 @@ Setup generates `.env` only when it does not already exist. It never rotates a w
 | `MESTIA_DB` | `instance/mestia.sqlite3` | SQLite database; relative paths start at the project directory. |
 | `MESTIA_MEDIA_DIR` | `instance/uploads` | Private local storage for uploaded service photographs. |
 | `MESTIA_HOST` | `127.0.0.1` | Bind only to this phone. |
-| `PORT` | `8000` | Local HTTP port. |
+| `PORT` | `8095` | Local HTTP port. |
 | `MESTIA_SECURE_COOKIES` | `0` | Use `1` for a public site served through HTTPS. |
 | `MESTIA_TRUST_PROXY` | `0` | Use `1` only behind a single trusted proxy connecting from IPv4 `127.0.0.1`. |
 
 Run `bash scripts/start.sh` to serve using Waitress. The Flask development server is not used for deployment. Restart the app after changing `.env`.
 
+### Change an occupied port
+
+Stop this app with `Ctrl+C`, then run:
+
+```bash
+bash scripts/set-port.sh 8095
+bash scripts/start.sh
+```
+
+Open **http://127.0.0.1:8095** on the phone. The command checks the requested loopback port and saves it in `.env` without changing your secret key, database or other settings. It refuses if the port is occupied; choose another unused port between 1 and 65535 if needed. The availability check applies at the time of the command, so startup can still fail if another process takes the port afterward. If an exported shell `PORT` conflicts, run `unset PORT` and repeat. You can also run `.venv/bin/python -m mestia set-port 8095` directly.
+
+Existing installs retain their saved port until you run this command. To use a different port for only one run, use `bash scripts/start.sh --port 8095`. Update any reverse proxy or tunnel origin to match your chosen port.
+
 ## Public access and HTTPS
 
 The initial address is private to the device. Public hosting requires a domain or chosen tunnel address, a user-managed HTTPS reverse proxy/tunnel, and reliable connectivity. These are not installed or configured automatically. Pricing and service conditions depend on the provider you choose; no free hosting plan or permanent tunnel URL is assumed.
 
-Keep the application on `127.0.0.1:8000` and have the proxy reach that local address. The proxy must terminate HTTPS and set its own forwarded headers. Do not expose the origin port directly to the internet or set `MESTIA_HOST=0.0.0.0` as a shortcut around the proxy. Waitress itself serves HTTP here.
+Keep the application on `127.0.0.1:8095` (or your configured local port) and have the proxy reach that local address. The proxy must terminate HTTPS and set its own forwarded headers. Do not expose the origin port directly to the internet or set `MESTIA_HOST=0.0.0.0` as a shortcut around the proxy. Waitress itself serves HTTP here.
 
 Before using real guest data publicly:
 

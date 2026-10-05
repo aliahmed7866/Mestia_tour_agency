@@ -18,6 +18,7 @@ from flask import (abort, current_app, flash, g, make_response, redirect,
                    render_template, request, send_from_directory, session, url_for)
 from . import get_db
 from . import domain
+from .business_content import instagram_profile, whatsapp_business_link, whatsapp_contact
 from .security import csrf_token, validate_csrf, check_password, verify_totp, rate_limit
 
 TBILISI = ZoneInfo('Asia/Tbilisi')
@@ -94,6 +95,12 @@ def settings_data():
                 hours=data.get('operating_hours', ''), terms=data.get('booking_terms', ''),
                 privacy=data.get('privacy_notice', ''), intro_en=data.get('about_en', ''),
                 intro_ka=data.get('about_ka', ''))
+    data['whatsapp_url'] = whatsapp_contact(data)[0]
+    for key in ('guesthouse_instagram_url', 'guide_instagram_url'):
+        try:
+            data[key] = instagram_profile(data.get(key, ''))
+        except ValueError:
+            data[key] = ''
     return data
 
 
@@ -331,11 +338,11 @@ def register_routes(app):
         if q:
             q.update(deposit_minor=q['deposit_required_minor'], policy_text=q['terms'])
         paid = sum((-1 if p['kind'] == 'refund' else 1) * p['amount_minor'] for p in payments if p['verified'] and not p.get('voided'))
-        whatsapp = settings_data().get('whatsapp_number', '')
-        whatsapp_url = 'https://wa.me/' + whatsapp + '?' + urlencode({'text': f"Hello, my request reference is {e['reference']}. Please help with my {e['kind']} request."}) if whatsapp else None
+        whatsapp_url, whatsapp_prefilled = whatsapp_contact(settings_data(),
+            f"Hello, my request reference is {e['reference']}. Please help with my {e['kind']} request.")
         return render_template('status.html', enquiry=e, quote=q, items=items, booking=b, payments=payments,
                                assignments=assignments, balance_minor=max(0, (q['total_minor'] if q else 0) - paid),
-                               paid_minor=paid, whatsapp_url=whatsapp_url, token=token)
+                               paid_minor=paid, whatsapp_url=whatsapp_url, whatsapp_prefilled=whatsapp_prefilled, token=token)
 
     @app.post('/booking/<token>/accept')
     def accept(token):
@@ -762,11 +769,15 @@ def register_admin(app):
         if request.method=='POST':
             try:
                 f=request.form
-                allowed=['business_name','whatsapp_number','contact_email','address','operating_hours','response_note','about_en','about_ka','booking_terms','privacy_notice','policy_version']
-                values={key:f.get(key,'').strip()[:20000] for key in allowed}
+                allowed=['business_name','whatsapp_number','contact_email','address','operating_hours','response_note','about_en','about_ka','booking_terms','privacy_notice','policy_version','whatsapp_link','guesthouse_name','guesthouse_instagram_url','guide_instagram_url']
+                current = settings_data()
+                values={key:f.get(key,current.get(key,'')).strip()[:20000] for key in allowed}
                 required(values['business_name'],'Business name',200)
                 if values['whatsapp_number'] and not re.fullmatch(r'[1-9][0-9]{6,14}',values['whatsapp_number']):
                     raise ValueError('WhatsApp number must include country code and digits only, without + or spaces.')
+                values['whatsapp_link'] = whatsapp_business_link(values['whatsapp_link'])
+                for key in ('guesthouse_instagram_url', 'guide_instagram_url'):
+                    values[key] = instagram_profile(values[key])
                 photo=save_image(request.files.get('hero_image'))
                 if photo: values['hero_image']=photo
                 get_db().execute('BEGIN IMMEDIATE')

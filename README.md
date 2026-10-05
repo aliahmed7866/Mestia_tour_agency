@@ -2,7 +2,7 @@
 
 A mobile-friendly tourism site and owner workspace for tours, guesthouse stays and taxi enquiries in Mestia. Built with Python, Flask, SQLite and Waitress so it can run directly in Termux without Docker, Node.js, root access or a database server.
 
-This is an initial pilot implementation. It starts with an empty catalogue: add the owner's real business information, services, photos, prices, resources and policies before inviting guests. “Mestia Travel” is a provisional name. No real bookings, reviews, drivers or availability are supplied.
+This is an initial pilot implementation. It includes the services from the supplied business card and Riverside Svaneti Guest House, with its Instagram and the card's exact WhatsApp QR destination. Add actual prices, photos, resources and policies before inviting guests. “Mestia Travel” is a provisional name. No real bookings, reviews, drivers or availability are supplied.
 
 ## Run on Android with Termux
 
@@ -19,9 +19,21 @@ bash scripts/setup-termux.sh
 bash scripts/start.sh
 ```
 
-Use your own email instead of `you@example.com`. Account creation prompts for a password and authenticator enrollment; there is no default administrator password. Open **http://127.0.0.1:8000** on the same phone, then `/admin` for the owner workspace. Stop with `Ctrl+C`.
+Use your own email instead of `you@example.com`. Account creation prompts for a password and authenticator enrollment; there is no default administrator password. Open **http://127.0.0.1:8095** on the same phone, then `/admin` for the owner workspace. Stop with `Ctrl+C`.
 
 The setup script creates a private random secret in `.env` and initializes `instance/mestia.sqlite3`. Running it again preserves existing configuration and data. Keep both out of Git. After Python package upgrades, an existing virtual environment may need to be recreated; preserve `.env` and `instance/`.
+
+If you already installed the app, stop it with `Ctrl+C` and switch the saved port after updating:
+
+```bash
+git pull --ff-only
+bash scripts/set-port.sh 8095
+bash scripts/start.sh
+```
+
+On the next startup, the supplied service/contact content is added once; existing operator edits and nonempty contact settings are preserved. The guide’s separate Instagram profile remains unset until supplied.
+
+The port command preserves the other `.env` settings and secret key, and refuses to change the file if the requested local port is occupied. Choose another unused port with the same command if necessary. An existing `.env` is never replaced by setup, so updating alone keeps its previous port. If you have exported `PORT` in your shell, run `unset PORT` before changing the saved port. Startup prints the address actually in use.
 
 The same setup and start scripts work on Linux with Python 3.11+ and `venv` installed; skip `pkg` there. See [Termux deployment](docs/termux.md) before making the app public.
 
@@ -35,7 +47,7 @@ The same setup and start scripts work on Linux with Python 3.11+ and `venv` inst
 - Separate manual payment records, change/cancellation requests, reminders and audit history.
 - Individual staff accounts with password and authenticator codes, server-side permissions, CSRF protection, request throttling and a form spam trap.
 
-Opening WhatsApp does not send a message or confirm a booking. Staff handle chats, verify contact, record payments and complete reminder tasks manually. Tours initially reserve guides exclusively for private trips; a shared-seat departure workflow is later work. There is no WhatsApp inbox sync, automatic messaging, card checkout or accommodation-channel sync. Georgian copy needs a native-speaker review. Do a supervised pilot with your real inventory before launch.
+Opening WhatsApp does not send a message or confirm a booking. The supplied QR business link opens the chat; guests must include their request reference manually. If the owner enters a full international WhatsApp number in settings, guest links can prefill the reference. Staff handle chats, verify contact, record payments and complete reminder tasks manually. Tours initially reserve guides exclusively for private trips; a shared-seat departure workflow is later work. There is no WhatsApp inbox sync, automatic messaging, card checkout or accommodation-channel sync. Georgian copy needs a native-speaker review. Do a supervised pilot with your real inventory before launch.
 
 ## Operations and development
 

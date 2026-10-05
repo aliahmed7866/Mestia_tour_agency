@@ -1,4 +1,5 @@
 import sqlite3
+import socket
 from types import SimpleNamespace
 import zipfile
 
@@ -142,3 +143,61 @@ def test_disable_staff_preserves_last_owner(tmp_path):
         cli._disable_user(conn, "owner@example.org")
     assert conn.execute("SELECT active FROM users WHERE role='owner'").fetchone()[0] == 1
     conn.close()
+
+
+def test_set_port_preserves_private_configuration_without_loading_app(tmp_path, monkeypatch, capsys):
+    import mestia
+    from mestia import __main__ as cli
+    original = b"# Private settings\r\nSECRET_KEY=existing-private-secret\r\nPORT=8000\r\nMESTIA_DB=custom.sqlite3\r\n"
+    env = tmp_path / ".env"
+    env.write_bytes(original)
+    monkeypatch.setattr(mestia, "ROOT", tmp_path)
+    monkeypatch.delenv("PORT", raising=False)
+
+    def must_not_start():
+        pytest.fail("Changing the port must not initialize the application or database")
+
+    monkeypatch.setattr(mestia, "create_app", must_not_start)
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    assert cli.main(["set-port", str(port)]) == 0
+    assert env.read_bytes() == original.replace(b"PORT=8000", f"PORT={port}".encode())
+    output = capsys.readouterr().out
+    assert f"http://127.0.0.1:{port}" in output
+    assert "existing-private-secret" not in output
+    assert not (tmp_path / "instance").exists()
+
+
+def test_set_port_refuses_occupied_port_without_changing_configuration(tmp_path, monkeypatch):
+    from mestia import __main__ as cli
+    env = tmp_path / ".env"
+    original = b"SECRET_KEY=keep-this\nPORT=8000\n"
+    env.write_bytes(original)
+    monkeypatch.delenv("PORT", raising=False)
+    with socket.socket() as occupied:
+        occupied.bind(("127.0.0.1", 0))
+        occupied.listen()
+        with pytest.raises(ValueError, match="unavailable"):
+            cli.set_port(occupied.getsockname()[1], env)
+    assert env.read_bytes() == original
+
+
+@pytest.mark.parametrize("port", [0, -1, 65536])
+def test_set_port_rejects_invalid_port_without_changing_configuration(tmp_path, port):
+    from mestia import __main__ as cli
+    env = tmp_path / ".env"
+    env.write_text("PORT=8000\n")
+    with pytest.raises(ValueError, match="between 1 and 65535"):
+        cli.set_port(port, env)
+    assert env.read_text() == "PORT=8000\n"
+
+
+def test_set_port_rejects_conflicting_shell_override(tmp_path, monkeypatch):
+    from mestia import __main__ as cli
+    env = tmp_path / ".env"
+    env.write_text("PORT=8000\n")
+    monkeypatch.setenv("PORT", "8000")
+    with pytest.raises(ValueError, match="unset PORT"):
+        cli.set_port(8095, env)
+    assert env.read_text() == "PORT=8000\n"

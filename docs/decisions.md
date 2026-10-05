@@ -20,7 +20,7 @@ Baseline: **Mestia Travel and Guesthouse Web App**, dated 5 October 2026, suppli
 | Private local host by default | The owner can test on the phone immediately. Public deployment needs their own HTTPS proxy/tunnel and operations setup. |
 | Manual communications and payment verification | Avoid presenting unimplemented WhatsApp or payment integrations as working automation. |
 | Private tours initially | A tour reserves its guide exclusively. Shared departures with separately sold seats need a dedicated later workflow. |
-| Empty real catalogue | Business name, prices, rooms, available guides and policies were not confirmed. “Mestia Travel” is a provisional interface label. |
+| Supplied service catalogue | The owner supplied five card services and the Riverside Svaneti guesthouse profile on 5 October 2026. These are enquiry-only listings with no invented prices, inventory or availability. “Mestia Travel” remains a provisional umbrella name. |
 | Owner and dispatcher staff roles | Individual access for the current operation without implementing the full future partner marketplace. |
 
 These are reversible implementation choices, not confirmation of business facts.
@@ -38,3 +38,13 @@ The repository does not establish business terms or legal liability. Online card
 Admin reminder tasks require a person to send a message. Backup archives include database and photos and require the server to be stopped briefly; a scheduler, protected off-device storage, monitoring, public HTTPS and a domain need deployment configuration. Android device behavior must be verified on the intended phone. A general migration system, formal accessibility audit, reviewed translations and a supervised operational pilot remain launch preparation.
 
 Use real owner-approved content and complete representative bookings, conflicts, cancellations and restore drills before treating this as the business's live operating system.
+
+## Owner update on 5 October 2026
+
+The owner chose port **8095** after finding port 8000 occupied. Existing installations change their saved configuration with `bash scripts/set-port.sh 8095`.
+
+The supplied card lists Private Transfers, Mountain Tours, City Trips, Airport Pickup and 4x4 Off-Road Adventures. Its QR decodes to `https://wa.me/qr/DWVZTCF73QY5L1`. The visible printed digits are 593282478; the country prefix is covered, so the application uses the exact QR destination rather than inferring a full phone number.
+
+The supplied Instagram link and screenshot identify **Riverside Svaneti Guest House**, profile `https://www.instagram.com/riverside_svaneti/`. The screenshot describes river and mountain views, camps/events, breakfast and dinner, and free pickup from Mestia. Rooms, occupancy, rates, meal inclusions and pickup timing still need to be agreed by the host. Only the guesthouse link was provided; the guide profile remains unset. No Instagram photos were copied or scraped.
+
+This content update is transactional and runs once, preserving existing nonempty settings, matching owner-created services, and later operator edits. It creates no rooms, vehicles, drivers, prices or bookings.

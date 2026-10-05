@@ -2,7 +2,7 @@
 
 Implementation checked in the development Linux environment on 5 October 2026.
 
-- 38 automated tests pass: 19 booking-domain tests, 10 security/backup tests, and 9 HTTP integration tests.
+- 47 automated tests pass: 19 booking-domain tests, 16 security/configuration/backup tests, 9 HTTP integration tests and 3 business-content upgrade/contact tests.
 - Checks include concurrent final-room allocation, whole room-night boundaries, shared-person and vehicle conflicts, travel buffers, expired holds and driver offers, stale quote acceptance, pending/verified/voided payments, refund limits, quote snapshots, guest links and rotation, taxi acceptance and reassignment, staff access restrictions, TOTP replay prevention, CSRF and backup restoration.
 - Public and admin templates render through the Flask test client. Both JavaScript files pass Node syntax checks; shell scripts pass Bash syntax checks.
 - An isolated Linux setup smoke test confirmed random secret creation, restrictive file permissions, setup rerun data preservation and ZIP backup creation.
@@ -18,3 +18,5 @@ bash scripts/test.sh
 ```
 
 The repository includes GitHub Actions test configuration. A local test result is not a claim that hosted CI or a deployment has succeeded.
+
+The port/contact update was also smoke-tested with Waitress actually serving on `127.0.0.1:8095`: the health endpoint responded, and the homepage contained the exact WhatsApp QR destination and Riverside Svaneti Instagram URL. The temporary server was then stopped. Existing configuration/content preservation and rejection of an occupied port are covered by automated tests. This does not establish that port 8095 is free on the user’s phone; the configuration command checks it there.

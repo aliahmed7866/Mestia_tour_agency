@@ -4,14 +4,63 @@ from getpass import getpass
 import os
 from pathlib import Path
 import re
+import socket
 import sqlite3
 import sys
+import tempfile
 import zipfile
 from urllib.parse import quote, urlencode
 
 from .db import connect, init_db
 from .ops import backup, restore, runtime_lock
 from .security import hash_password, new_totp_secret, verify_totp
+
+
+def set_port(port, env_path):
+    """Persist a checked local port without loading the app or changing its secret."""
+    if not 1 <= port <= 65535:
+        raise ValueError("Port must be between 1 and 65535.")
+    env_path = Path(env_path)
+    if env_path.is_symlink():
+        raise ValueError("Refusing to replace a linked .env file. Update its PORT setting directly.")
+    if not env_path.is_file():
+        raise ValueError("First run bash scripts/setup-termux.sh to create .env.")
+    exported_port = os.environ.get("PORT")
+    if exported_port is not None and exported_port != str(port):
+        raise ValueError("An exported PORT overrides .env. Run unset PORT, then repeat this command.")
+    content = env_path.read_bytes().decode("utf-8")
+    # The probe checks availability now; another process could claim the port before startup.
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.bind(("127.0.0.1", port))
+    except OSError as exc:
+        raise ValueError(f"Port {port} is unavailable on 127.0.0.1. Stop the app or choose another port; .env was not changed.") from exc
+    lines = content.splitlines(keepends=True)
+    found = False
+    for index, line in enumerate(lines):
+        if re.match(r"^[ \t]*PORT[ \t]*=", line):
+            ending = "\r\n" if line.endswith("\r\n") else ("\n" if line.endswith("\n") else "")
+            lines[index] = f"PORT={port}{ending}"
+            found = True
+    if not found:
+        newline = "\r\n" if "\r\n" in content else "\n"
+        if lines and not lines[-1].endswith(("\r", "\n")):
+            lines[-1] += newline
+        lines.append(f"PORT={port}{newline}")
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="wb", prefix=".env-port-", dir=env_path.parent, delete=False) as output:
+            temporary = Path(output.name)
+            os.chmod(temporary, 0o600)
+            output.write("".join(lines).encode("utf-8"))
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(temporary, env_path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+    print(f"Saved PORT={port} in .env. Other settings and the secret key were preserved.")
+    print(f"Start with bash scripts/start.sh, then open http://127.0.0.1:{port} on this phone.")
 
 
 def _password():
@@ -118,8 +167,10 @@ def deployment_check(app):
             if not owners:
                 errors.append("Create at least one active owner with authenticator enrollment.")
             settings = dict(conn.execute("SELECT key,value FROM settings"))
-            for key, label in (("whatsapp_number", "central WhatsApp number"),
-                               ("booking_terms", "booking and cancellation terms"),
+            from .business_content import whatsapp_contact
+            if not whatsapp_contact(settings)[0]:
+                warnings.append("Configure your central WhatsApp number or business link before public launch.")
+            for key, label in (("booking_terms", "booking and cancellation terms"),
                                ("privacy_notice", "privacy notice")):
                 if not settings.get(key, "").strip():
                     warnings.append(f"Configure your {label} before public launch.")
@@ -150,6 +201,8 @@ def parser():
     serving = commands.add_parser("serve", help="Start the production Waitress server")
     serving.add_argument("--host", default=None)
     serving.add_argument("--port", type=int, default=None)
+    port_setting = commands.add_parser("set-port", help="Check and save a different local port in .env")
+    port_setting.add_argument("port", type=int, help="Port number between 1 and 65535")
     copying = commands.add_parser("backup", help="Back up database and media; stop server first")
     copying.add_argument("--output", required=True, help="New ZIP destination outside the media directory")
     restoring = commands.add_parser("restore", help="Restore a verified ZIP backup; stop server first")
@@ -161,9 +214,12 @@ def parser():
 
 def main(argv=None):
     args = parser().parse_args(argv)
-    # Help does not initialize the application. Real commands load its .env.
-    from . import create_app
+    # Help and set-port do not initialize the application or touch its database.
+    from . import ROOT, create_app
     try:
+        if args.command == "set-port":
+            set_port(args.port, ROOT / ".env")
+            return 0
         app = create_app()
         database, media = app.config["DATABASE"], app.config["MEDIA_DIR"]
         if args.command == "init-db":
@@ -172,7 +228,7 @@ def main(argv=None):
                 init_db(conn)
             finally:
                 conn.close()
-            print("Database initialized. No default admin, services or bookings were created.")
+            print("Database initialized. Owner-supplied service content is available; no default admin, inventory or bookings were created.")
         elif args.command in ("create-user", "reset-user", "disable-user"):
             conn = connect(database)
             try:
@@ -185,7 +241,7 @@ def main(argv=None):
         elif args.command == "serve":
             from waitress import serve
             host = args.host or os.environ.get("MESTIA_HOST", "127.0.0.1")
-            port = args.port if args.port is not None else int(os.environ.get("PORT", "8000"))
+            port = args.port if args.port is not None else int(os.environ.get("PORT", "8095"))
             if not 1 <= port <= 65535:
                 raise ValueError("Port must be between 1 and 65535.")
             proxy_options = {}
