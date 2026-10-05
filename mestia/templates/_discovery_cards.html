@@ -5,7 +5,7 @@
 {%- else -%}/static/destinations/mountain-valley.svg{%- endif -%}
 {%- endmacro %}
 {% macro months(svc) -%}
-{%- if svc.season_months == '1,2,3,4,5,6,7,8,9,10,11,12' -%}{{ tr('Year-round enquiries', 'მთელი წლის განმავლობაში') }}
+{%- if svc.season_months == '1,2,3,4,5,6,7,8,9,10,11,12' -%}{{ tr('Year-round', 'მთელი წლის განმავლობაში') }}
 {%- elif svc.season_months -%}
 {%- set names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] if lang == 'en' else ['იან','თებ','მარ','აპრ','მაი','ივნ','ივლ','აგვ','სექ','ოქტ','ნოე','დეკ'] -%}
 {%- for month in svc.season_months.split(',') -%}{{ names[month|int - 1] }}{% if not loop.last %} · {% endif %}{%- endfor -%}
@@ -25,6 +25,19 @@
       {% if svc.season_months %}<div><dt>{{ tr('Season', 'სეზონი') }}</dt><dd>{{ months(svc) }}</dd></div>{% endif %}
     </dl>{% endif %}
     <div class="trip-card-footer"><span class="trip-price">{% if svc.price_minor is not none %}<strong>{{ '%.2f'|format(svc.price_minor/100) }} {{ svc.currency }}</strong>{% if svc.price_basis %}<small>{{ svc.price_basis }}</small>{% endif %}{% else %}{{ tr('Price on request', 'ფასი მოთხოვნით') }}{% endif %}</span><a class="trip-view" href="{{ service_url(svc, lang) }}">{{ tr('View stay', 'ნახეთ განთავსება') if svc.kind == 'stay' else (tr('View route', 'ნახეთ მარშრუტი') if svc.kind == 'taxi' else tr('View trip', 'ნახეთ ტური')) }} <span aria-hidden="true">↗</span></a></div>
+    <a class="trip-request" href="/request?service_id={{ svc.id }}&amp;kind={{ svc.kind }}&amp;lang={{ lang }}" aria-label="{{ tr('Request booking for', 'დაჯავშნის მოთხოვნა:') }} {{ title }}">{{ tr('Request booking', 'დაჯავშნის მოთხოვნა') }} <span aria-hidden="true">→</span></a>
   </div>
 </article>
+{% endmacro %}
+
+{% macro catalogue_help() %}
+<section class="wrap catalogue-help" aria-labelledby="catalogue-help-title">
+  <div class="catalogue-help-heading"><div><p class="eyebrow">{{ tr('Before you set off', 'გამგზავრებამდე') }}</p><h2 id="catalogue-help-title">{{ tr('Good to know.', 'სასარგებლო ინფორმაცია.') }}</h2></div><a class="text-link" href="{{ url_for('faq', lang=lang) }}">{{ tr('Read all FAQs', 'ყველა კითხვა და პასუხი') }} →</a></div>
+  <div class="catalogue-answers">
+    <details><summary>{{ tr('How do I book?', 'როგორ დავჯავშნო?') }}</summary><p>{{ tr('Choose a trip, stay or transfer, then tap Request booking. Add your date, group size and contact details. We’ll check availability and send the price and next steps before anything is confirmed.', 'აირჩიეთ ტური, განთავსება ან ტრანსფერი და დააჭირეთ დაჯავშნის მოთხოვნას. მიუთითეთ თარიღი, ჯგუფის ზომა და საკონტაქტო ინფორმაცია. დადასტურებამდე შევამოწმებთ ხელმისაწვდომობას და გამოგიგზავნით ფასსა და შემდეგ ნაბიჯებს.') }}</p></details>
+    <details><summary>{{ tr('What if the weather changes?', 'რა ხდება ამინდის ცვლილებისას?') }}</summary><p>{{ tr('Mountain weather has the last word. Check the season and weather notes on your trip. If a route is affected, we’ll discuss a safer alternative or a change of date with you.', 'მთაში ამინდი გადამწყვეტია. ტურის გვერდზე გაეცანით სეზონისა და ამინდის ინფორმაციას. თუ პირობები მარშრუტს შეცვლის, თქვენთან ერთად განვიხილავთ უფრო უსაფრთხო ალტერნატივას ან თარიღის შეცვლას.') }}</p></details>
+    <details><summary>{{ tr('What is included in the trip?', 'რა შედის ტურში?') }}</summary><p>{{ tr('Each listing sets out the route, what is included and what to bring. Check the exclusions too: meals, tickets, transport and accommodation vary by trip. Your quote will confirm the details.', 'თითოეულ შეთავაზებაში ნახავთ მარშრუტს, ჩართულ მომსახურებებსა და საჭირო ნივთებს. შეამოწმეთ ისიც, რაც ფასში არ შედის: კვება, ბილეთები, ტრანსპორტი და განთავსება ტურის მიხედვით განსხვავდება. დეტალები შეთავაზებაში დადასტურდება.') }}</p></details>
+  </div>
+  <div class="catalogue-custom"><div><h3>{{ tr('Still haven’t found your trip?', 'ჯერ ვერ იპოვეთ სასურველი ტური?') }}</h3><p>{{ tr('For a different route or a question the FAQs don’t cover, get in touch.', 'სხვა მარშრუტისთვის ან კითხვებზე დამატებითი პასუხებისთვის დაგვიკავშირდით.') }}</p></div><a class="text-link" href="/request?kind=combined&amp;lang={{ lang }}">{{ tr('Contact us', 'დაგვიკავშირდით') }} ↗</a></div>
+</section>
 {% endmacro %}

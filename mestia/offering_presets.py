@@ -1,9 +1,20 @@
-"""Install researched route drafts once; never overwrite the owner's catalogue."""
+"""Install route proposals once and preserve every subsequent owner decision."""
 import json
 from pathlib import Path
 
 PRESET_VERSION = '_researched_offerings_20261005_v1'
 SHORT_BREAK_VERSION = '_short_break_offerings_20261005_v1'
+CATALOGUE_LAUNCH_VERSION = '_request_catalogue_launch_20261005_v1'
+REQUEST_CATALOGUE_KEYS = frozenset({
+    'svaneti-mestia-culture-v1',
+    'svaneti-hatsvali-views-v1',
+    'svaneti-chalaadi-v1',
+    'svaneti-koruldi-hike-v1',
+    'svaneti-koruldi-4x4-v1',
+    'svaneti-ushguli-day-v1',
+    'svaneti-shdugra-lower-viewpoint-v1',
+    'svaneti-heshkili-short-outing-v1',
+})
 PRESET_BATCHES = (
     (PRESET_VERSION, ('svaneti_offerings.json', 'georgia_offerings.json')),
     (SHORT_BREAK_VERSION, ('short_break_offerings.json',)),
@@ -21,7 +32,7 @@ def load_presets(filenames=None):
 
 
 def apply_offering_presets(conn):
-    """Drafts need local review; prices, staff, capacity and availability are unset."""
+    """Install drafts, then open the selected untouched proposals to requests once."""
     conn.execute('BEGIN IMMEDIATE')
     try:
         columns = {r['name'] for r in conn.execute('PRAGMA table_info(services)')}
@@ -39,7 +50,52 @@ def apply_offering_presets(conn):
                 conn.execute('INSERT INTO services (' + ','.join(data) + ') VALUES (' +
                              ','.join('?' for _ in data) + ')', tuple(data.values()))
             conn.execute('INSERT INTO settings(key,value) VALUES (?,?)', (version, 'applied'))
+        _launch_request_catalogue(conn)
         conn.commit()
     except Exception:
         conn.rollback()
         raise
+
+
+def _launch_request_catalogue(conn):
+    """One-time launch, not a recurring instruction to republish the catalogue.
+
+    These eight local outings accept requests, never guarantee a departure or
+    create inventory. Their existing route, season and quote conditions remain.
+    Packages needing accommodation or additional partners remain drafts.
+    """
+    if conn.execute('SELECT 1 FROM settings WHERE key=?', (CATALOGUE_LAUNCH_VERSION,)).fetchone():
+        return
+    # Compare every stored field with the original seed, including untranslated
+    # copy, media and prices. New schema defaults participate automatically; a
+    # value changed directly in SQLite must be respected just like an admin edit.
+    defaults = {}
+    for column in conn.execute('PRAGMA table_info(services)').fetchall():
+        name = column['name']
+        if name in {'id', 'created_at', 'updated_at'}:
+            continue
+        default = column['dflt_value']
+        # SQL expressions here come from our table schema, never form input.
+        defaults[name] = conn.execute('SELECT ' + default).fetchone()[0] if default is not None else None
+    for preset in load_presets():
+        if preset['preset_key'] not in REQUEST_CATALOGUE_KEYS:
+            continue
+        candidates = conn.execute('SELECT * FROM services WHERE preset_key=?',
+                                  (preset['preset_key'],)).fetchall()
+        # Duplicates or a missing original are ambiguous: never restore or guess.
+        if len(candidates) != 1:
+            continue
+        service = candidates[0]
+        if service['created_at'] != service['updated_at']:
+            continue
+        if conn.execute("SELECT 1 FROM audit WHERE entity_type='service' AND entity_id=? LIMIT 1",
+                        (service['id'],)).fetchone():
+            continue
+        expected = dict(defaults, **preset, provider_id=1, published=0,
+                        price_minor=None, capacity=None)
+        if any(service[name] != value for name, value in expected.items()):
+            continue
+        conn.execute('UPDATE services SET published=1,updated_at=CURRENT_TIMESTAMP WHERE id=?',
+                     (service['id'],))
+    # Record completion even when every row was edited or removed by its owner.
+    conn.execute('INSERT INTO settings(key,value) VALUES (?,?)', (CATALOGUE_LAUNCH_VERSION, 'applied'))

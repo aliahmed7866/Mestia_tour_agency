@@ -1,17 +1,22 @@
-"""Research drafts must never advertise invented inventory or overwrite owner edits."""
+"""Requestable route proposals must never invent inventory or overwrite owner edits."""
+import pytest
+
 from mestia.catalogue import migrate_catalogue, research_checked, research_sources, season_months
 from mestia.db import SCHEMA, connect, init_db, seed_defaults
-from mestia.offering_presets import (PRESET_VERSION, SHORT_BREAK_VERSION,
+from mestia.offering_presets import (CATALOGUE_LAUNCH_VERSION, PRESET_BATCHES,
+                                    PRESET_VERSION, REQUEST_CATALOGUE_KEYS, SHORT_BREAK_VERSION,
                                     apply_offering_presets, load_presets)
 
 
-def test_researched_offers_start_as_complete_unpriced_drafts(tmp_path):
+def test_selected_routes_accept_requests_without_inventing_inventory(tmp_path):
     conn = connect(str(tmp_path / 'presets.sqlite3'))
     init_db(conn)
     offers = conn.execute("SELECT * FROM services WHERE preset_key<>''").fetchall()
     assert len(offers) == len(load_presets()) == 19
+    assert {offer['preset_key'] for offer in offers if offer['published']} == REQUEST_CATALOGUE_KEYS
+    assert len(REQUEST_CATALOGUE_KEYS) == 8
     for offer in offers:
-        assert offer['published'] == 0 and offer['archived_at'] is None
+        assert offer['archived_at'] is None
         assert offer['price_minor'] is None and offer['capacity'] is None
         for field in ('title_en', 'description_en', 'itinerary_en', 'region', 'base_location',
                       'duration', 'difficulty', 'season_en', 'weather_en', 'requirements_en',
@@ -24,6 +29,77 @@ def test_researched_offers_start_as_complete_unpriced_drafts(tmp_path):
         assert offer['duration_days'] >= 1
     for table in ('resources', 'bookings', 'quotes'):
         assert conn.execute(f'SELECT count(*) FROM {table}').fetchone()[0] == 0
+    conn.close()
+
+
+def legacy_presets(tmp_path):
+    """Build the pre-launch state: the original two draft batches already ran."""
+    conn = connect(str(tmp_path / 'legacy.sqlite3'))
+    conn.executescript(SCHEMA)
+    migrate_catalogue(conn)
+    seed_defaults(conn)
+    for preset in load_presets():
+        data = dict(preset, provider_id=1, published=0, price_minor=None, capacity=None)
+        conn.execute('INSERT INTO services (' + ','.join(data) + ') VALUES (' +
+                     ','.join('?' for _ in data) + ')', tuple(data.values()))
+    for version, _ in PRESET_BATCHES:
+        conn.execute('INSERT INTO settings(key,value) VALUES (?,?)', (version, 'applied'))
+    return conn
+
+
+def test_existing_untouched_drafts_launch_once_and_can_be_disabled(tmp_path):
+    conn = legacy_presets(tmp_path)
+    assert not conn.execute('SELECT 1 FROM services WHERE published=1').fetchone()
+    apply_offering_presets(conn)
+    assert {r[0] for r in conn.execute('SELECT preset_key FROM services WHERE published=1')} == REQUEST_CATALOGUE_KEYS
+    target = conn.execute('SELECT id FROM services WHERE published=1 LIMIT 1').fetchone()[0]
+    conn.execute('UPDATE services SET published=0 WHERE id=?', (target,))
+    before = [dict(r) for r in conn.execute('SELECT * FROM services ORDER BY id')]
+    apply_offering_presets(conn)
+    assert [dict(r) for r in conn.execute('SELECT * FROM services ORDER BY id')] == before
+    assert conn.execute('SELECT 1 FROM settings WHERE key=?', (CATALOGUE_LAUNCH_VERSION,)).fetchone()
+    conn.close()
+
+
+@pytest.mark.parametrize(('field', 'value'), [
+    ('title_en', 'Our town walk'),
+    ('title_ka', 'მესტია'),
+    ('price_minor', 10000),
+    ('capacity', 4),
+    ('currency', 'USD'),
+    ('image_path', 'owner-picture.webp'),
+    ('photo_url', 'https://example.com/photo.jpg'),
+    ('season_months', '7,8'),
+    ('updated_at', '2026-10-05T14:00:00Z'),
+])
+def test_launch_preserves_any_changed_seed_field_even_without_audit(tmp_path, field, value):
+    conn = legacy_presets(tmp_path)
+    target = conn.execute('SELECT id FROM services WHERE preset_key=?',
+                          ('svaneti-mestia-culture-v1',)).fetchone()[0]
+    conn.execute(f'UPDATE services SET {field}=? WHERE id=?', (value, target))
+    before = dict(conn.execute('SELECT * FROM services WHERE id=?', (target,)).fetchone())
+    apply_offering_presets(conn)
+    assert dict(conn.execute('SELECT * FROM services WHERE id=?', (target,)).fetchone()) == before
+    assert conn.execute('SELECT count(*) FROM services WHERE published=1').fetchone()[0] == 7
+    conn.close()
+
+
+def test_launch_respects_owner_disabled_archived_and_deleted_routes(tmp_path):
+    conn = legacy_presets(tmp_path)
+    ids = [r[0] for r in conn.execute('SELECT id FROM services WHERE preset_key IN (?,?,?) ORDER BY id',
+                                     ('svaneti-mestia-culture-v1', 'svaneti-hatsvali-views-v1', 'svaneti-chalaadi-v1'))]
+    # An unchanged draft may have been deliberately disabled or saved unchanged.
+    # Audit history protects that choice even if timestamps happen to be equal.
+    conn.execute("INSERT INTO audit(action,entity_type,entity_id,created_at) VALUES ('service_unpublish','service',?,'2026-10-05T14:00:00Z')",
+                 (ids[0],))
+    conn.execute("UPDATE services SET archived_at='2026-10-05T14:00:00Z' WHERE id=?", (ids[1],))
+    conn.execute('DELETE FROM services WHERE id=?', (ids[2],))
+    before = {r['id']: dict(r) for r in conn.execute('SELECT * FROM services WHERE id IN (?,?)', ids[:2])}
+    apply_offering_presets(conn)
+    for identifier, original in before.items():
+        assert dict(conn.execute('SELECT * FROM services WHERE id=?', (identifier,)).fetchone()) == original
+    assert not conn.execute('SELECT 1 FROM services WHERE id=?', (ids[2],)).fetchone()
+    assert conn.execute('SELECT count(*) FROM services WHERE published=1').fetchone()[0] == 5
     conn.close()
 
 

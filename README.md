@@ -50,8 +50,9 @@ The same setup and start scripts work on Linux with Python 3.11+ and `venv` inst
 ## What the pilot covers
 
 - Trip cards, scannable itineraries, English/Georgian navigation and private guest status links.
-- Short enquiries with a preferred date, guests, name and phone; optional details stay tucked away. Staff agree the actual schedule before quoting.
-- Nineteen researched offering drafts, focused on Svaneti, with editable itineraries, seasons, logistics and source notes.
+- Catalogue-first booking requests retain the chosen activity and ask for a preferred date, guests, name and phone. Staff agree the actual schedule before quoting.
+- Nineteen researched route presets: eight Svaneti day outings open to requests, with eleven further proposals kept as drafts. Itineraries, seasons, logistics and source notes are editable.
+- A public FAQ answers booking and trip questions before offering general contact or a custom request.
 - Owner-managed catalogue with preview, publish, disable, delete and restore; providers, resources and availability blocks.
 - Enquiry → quote → guest acceptance → staff confirmation, with expiring inventory holds.
 - Room-night and shared guide/driver/vehicle conflict checks in database transactions.
@@ -59,11 +60,13 @@ The same setup and start scripts work on Linux with Python 3.11+ and `venv` inst
 - Separate manual payment records, change/cancellation requests, reminders and audit history.
 - Individual staff accounts with passwords and optional authenticator codes, server-side permissions, CSRF protection, request throttling and a form spam trap.
 
-Opening WhatsApp does not send a message or confirm a booking. The supplied QR business link opens the chat; guests must include their request reference manually. If the owner enters a full international WhatsApp number in settings, guest links can prefill the reference. Staff handle chats, verify contact, record payments and complete reminder tasks manually. Tours initially reserve guides exclusively for private trips; a shared-seat departure workflow is later work. There is no WhatsApp inbox sync, automatic messaging, card checkout or accommodation-channel sync. Georgian copy needs a native-speaker review. Do a supervised pilot with your real inventory before launch.
+Opening WhatsApp does not send a message or confirm a booking. A full international WhatsApp number in settings enables editable message prefill: activity links include the title and page link, and guest status links include the request reference. With the supplied QR link, activity pages instead offer an editable message to copy and paste into the chat; guests using their status page must include the reference manually. Staff handle chats, verify contact, record payments and complete reminder tasks manually. Tours initially reserve guides exclusively for private trips; a shared-seat departure workflow is later work. There is no WhatsApp inbox sync, automatic messaging, card checkout or accommodation-channel sync. Georgian copy needs a native-speaker review. Do a supervised pilot with your real inventory before launch.
 
 ## Researched offering presets
 
-Startup installs 19 route drafts once: twelve Svaneti outings and short breaks, western transfers and touring, plus Tbilisi-based Kazbegi and Kakheti extensions. Existing installations receive only the new Heshkili outing and three-day Mestia programme. They do not replace existing services or publish themselves. Open **Admin → Services → Drafts**, edit a route, preview it and publish when the guide has confirmed delivery. Prices, actual resources and group limits are deliberately unfilled. Source URLs, checked date and private planning notes live in each editor.
+Startup installs 19 researched route proposals once. A one-time launch makes eight untouched Svaneti day outings visible for booking requests; the other eleven remain drafts. On existing installations, edited, disabled, archived or deleted routes are preserved. These proposals do not promise departures or availability: staff confirm conditions, providers and price before booking. Prices, actual resources and group limits are deliberately unfilled. Source URLs, checked date and private planning notes live in each editor. See the [launch details and eight routes](docs/catalogue-launch.md).
+
+Open **Admin → Services** to amend a visible route, or select **Drafts** to review the remaining proposals. Preview and publish those when the guide has confirmed delivery.
 
 Every offering's public copy and logistics can be changed without code. Disabling hides it; deleting removes it from the active catalogue while preserving enquiry/quote history; restoring returns it as a draft. Later restarts preserve those choices. Calendar filters describe the planned season, not live availability. Read the [research and route decisions](docs/offering-research.md) and [short-break additions](docs/short-break-research.md).
 

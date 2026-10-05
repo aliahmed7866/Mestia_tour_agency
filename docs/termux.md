@@ -128,7 +128,7 @@ bash scripts/test.sh
 bash scripts/start.sh
 ```
 
-This update adds catalogue columns without rebuilding existing tables, then installs researched drafts once. Existing rows, operator edits, deleted/disabled offers and configuration are preserved. This is a specific additive migration, not a general promise of compatibility with every future schema change: read future release instructions before updating a live installation. Never reset the working database to make an update succeed. Review dependency security updates as part of ongoing maintenance.
+This update adds catalogue columns without rebuilding existing tables and installs researched proposals once. A one-time launch opens eight untouched Svaneti day outings to requests, leaving eleven proposals as drafts. Operator edits, deleted/disabled offers and configuration are preserved; restarting never republishes a route you disable. The catalogue, activity booking requests and FAQ are ready to review after startup. See the [catalogue launch details](catalogue-launch.md). This is a specific additive migration, not a general promise of compatibility with every future schema change: read future release instructions before updating a live installation. Never reset the working database to make an update succeed. Review dependency security updates as part of ongoing maintenance.
 
 ## Official references
 

@@ -85,3 +85,37 @@ if (requestForm) {
   if (checkIn) checkIn.addEventListener("change", updateCheckOut);
   updateCheckOut();
 }
+
+// QR-based business links cannot carry a click-to-chat message reliably.
+// Keep an editable draft and copy only after the guest explicitly clicks.
+document.querySelectorAll("[data-activity-message]").forEach((draft) => {
+  const message = draft.querySelector("[data-activity-message-text]");
+  const button = draft.querySelector("[data-copy-activity-message]");
+  const status = draft.querySelector("[data-copy-status]");
+  if (!message || !button || !status) return;
+  button.hidden = false;
+  button.addEventListener("click", async () => {
+    let copied = false;
+    button.disabled = true;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(message.value);
+        copied = true;
+      }
+    } catch (_) {
+      // Clipboard permission may be unavailable in a local Termux preview.
+    }
+    if (!copied) {
+      message.focus();
+      message.select();
+      try {
+        copied = Boolean(document.execCommand && document.execCommand("copy"));
+      } catch (_) {
+        // Leave the text selected for the phone's native Copy action.
+      }
+    }
+    status.textContent = copied ? button.dataset.copySuccess : button.dataset.copyManual;
+    button.disabled = false;
+    if (copied) button.focus();
+  });
+});

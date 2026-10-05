@@ -12,7 +12,7 @@ from urllib.parse import quote, urlencode, urlsplit
 from flask import current_app, g, request
 
 
-PUBLIC_ENDPOINTS = frozenset({'home', 'services', 'service_detail', 'info', 'travel_guide'})
+PUBLIC_ENDPOINTS = frozenset({'home', 'services', 'service_detail', 'info', 'travel_guide', 'faq'})
 FACETS = frozenset({'region', 'activity', 'duration', 'month'})
 KINDS = frozenset({'tour', 'stay', 'taxi'})
 SOCIAL_IMAGE = '/static/social-card.png'
@@ -131,8 +131,8 @@ def build_metadata(settings, service=None):
     if endpoint == 'home':
         path = '/'
         title = choose('Mestia tours, Svaneti stays & transfers', 'მესტიის ტურები, განთავსება და ტრანსფერები')
-        description = choose('Plan your time in Svaneti with mountain tours from Mestia, a guesthouse stay and private transfers. Tell us your dates and we will work out the details.',
-                             'დაგეგმეთ დრო სვანეთში: მთის ტურები მესტიიდან, საოჯახო სასტუმრო და კერძო ტრანსფერები. გაგვიზიარეთ თარიღები და დეტალებს ერთად შევათანხმებთ.')
+        description = choose('Browse mountain tours from Mestia, guesthouse stays and private transfers. Compare routes and seasons, choose your activity and request a booking.',
+                             'დაათვალიერეთ მთის ტურები მესტიიდან, განთავსება და კერძო ტრანსფერები. შეადარეთ მარშრუტები და სეზონები, აირჩიეთ აქტივობა და გაგზავნეთ დაჯავშნის მოთხოვნა.')
     elif endpoint == 'services':
         path = '/services'
         kind = request.args.get('kind', '')
@@ -143,14 +143,14 @@ def build_metadata(settings, service=None):
                   'taxi': choose('Mestia transfers & Georgia transport', 'მესტიის ტრანსფერები და მგზავრობა საქართველოში'),
                   '': choose('Explore Svaneti: tours, stays & transfers', 'აღმოაჩინეთ სვანეთი: ტურები, განთავსება და ტრანსფერები')}
         descriptions = {
-            'tour': choose('Explore mountain days and longer journeys from Mestia. Compare routes, walking, seasons and practical details, then ask about your preferred dates.',
-                           'აღმოაჩინეთ ერთდღიანი და მრავალდღიანი მოგზაურობები მესტიიდან. შეადარეთ მარშრუტები, სეზონები და სირთულე; გვკითხეთ თქვენთვის სასურველ თარიღებზე.'),
-            'stay': choose('Find a base for your Svaneti visit. Explore guesthouse details and ask about rooms, meals and availability for your dates.',
-                           'იპოვეთ დასარჩენი ადგილი სვანეთში. გაეცანით საოჯახო სასტუმროს და გვკითხეთ ოთახების, კვებისა და თქვენთვის სასურველი თარიღების შესახებ.'),
-            'taxi': choose('Arrange private transfers, airport pickup and local transport around Mestia and Georgia. Share your route and group size for a tailored quote.',
-                           'შეათანხმეთ კერძო ტრანსფერი, აეროპორტიდან დახვედრა და ადგილობრივი მგზავრობა. მოგვწერეთ მარშრუტი და მგზავრთა რაოდენობა შეთავაზებისთვის.'),
-            '': choose('Browse tours, guesthouse stays and transfers in Svaneti and across Georgia. See trip details and send a short enquiry to plan your visit.',
-                       'დაათვალიერეთ ტურები, განთავსება და ტრანსფერები სვანეთსა და საქართველოში. გაეცანით დეტალებს და გამოგვიგზავნეთ მოკლე მოთხოვნა.')}
+            'tour': choose('Choose a mountain day or a longer journey from Mestia. Compare routes, walking, seasons and practical details, then request your preferred dates.',
+                           'აირჩიეთ ერთდღიანი ან მრავალდღიანი მოგზაურობა მესტიიდან. შეადარეთ მარშრუტები, სეზონები და სირთულე; გაგზავნეთ მოთხოვნა სასურველ თარიღებზე.'),
+            'stay': choose('Find a base for your Svaneti visit. Read the guesthouse details, choose your dates and send a booking request for your stay.',
+                           'იპოვეთ დასარჩენი ადგილი სვანეთში. გაეცანით საოჯახო სასტუმროს, აირჩიეთ თარიღები და გაგზავნეთ დაჯავშნის მოთხოვნა.'),
+            'taxi': choose('Browse private transfers, airport pickup and local transport around Mestia and Georgia. Choose your ride and send your dates and group size.',
+                           'დაათვალიერეთ კერძო ტრანსფერები, აეროპორტიდან დახვედრა და ადგილობრივი მგზავრობა. აირჩიეთ მგზავრობა და გაგზავნეთ თარიღები და მგზავრთა რაოდენობა.'),
+            '': choose('Browse tours, guesthouse stays and transfers in Svaneti and across Georgia. Compare the details, choose an activity and send a booking request.',
+                       'დაათვალიერეთ ტურები, განთავსება და ტრანსფერები სვანეთსა და საქართველოში. შეადარეთ დეტალები, აირჩიეთ აქტივობა და გაგზავნეთ დაჯავშნის მოთხოვნა.')}
         title, description = titles[kind], descriptions[kind]
         allow_index = not any(request.args.get(key) for key in FACETS)
     elif endpoint == 'service_detail':
@@ -162,8 +162,15 @@ def build_metadata(settings, service=None):
         title = _localized(record, 'title', lang)
         description = _localized(record, 'description', lang) or _localized(record, 'details', lang)
         if not description:
-            description = choose(f'Explore {title}. See the practical details and ask about your preferred dates.',
-                                 f'გაეცანით შეთავაზებას: {title}. გვკითხეთ თქვენთვის სასურველი თარიღების შესახებ.')
+            description = choose(f'Explore {title}. See the practical details and request a booking for your preferred dates.',
+                                 f'გაეცანით შეთავაზებას: {title}. გაგზავნეთ დაჯავშნის მოთხოვნა სასურველ თარიღებზე.')
+    elif endpoint == 'faq':
+        path = '/faq'
+        # Navigation is translated; the FAQ article is English until reviewed.
+        translated = False
+        lang = 'en'
+        title = 'Booking questions: tours, stays & transfers'
+        description = 'How to request a Svaneti trip, check prices and inclusions, plan around the weather, and follow your booking. Practical answers before you choose.'
     elif endpoint == 'travel_guide':
         path = '/visit-svaneti'
         # The researched article is English until its Georgian body is reviewed.
@@ -261,6 +268,7 @@ def sitemap_entries(conn):
     for path in ('/', '/services', '/about'):
         add(path)
     add('/visit-svaneti', translated=False)
+    add('/faq', translated=False)
     for kind in ('tour', 'stay', 'taxi'):
         add('/services', kind)
     for row in conn.execute('SELECT id,slug,title_ka,description_ka,updated_at FROM services WHERE published=1 AND archived_at IS NULL ORDER BY id'):

@@ -47,7 +47,12 @@ def whatsapp_contact(settings, message=None):
         url = 'https://wa.me/' + number
         return (url + '?' + urlencode({'text': message}), True) if message else (url, False)
     try:
-        return whatsapp_business_link(settings.get('whatsapp_link', '')), False
+        url = whatsapp_business_link(settings.get('whatsapp_link', ''))
+        # Direct number links also support editable drafts. QR/business tokens
+        # do not document a per-link message override.
+        if message and re.fullmatch(r'https://wa\.me/[1-9][0-9]{6,14}', url):
+            return url + '?' + urlencode({'text': message}), True
+        return url, False
     except ValueError:
         return '', False
 

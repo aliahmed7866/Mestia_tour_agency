@@ -4,37 +4,39 @@
 {% set picked_id = f.get('service_ids') or selected_service_id|default(request.args.get('service_id')) %}
 {% set choice = namespace(service=none) %}
 {% for svc in services %}{% if (svc.id|string) == (picked_id|string) and (request_kind == 'combined' or svc.kind == request_kind) %}{% set choice.service = svc %}{% endif %}{% endfor %}
-{% block title %}{{ tr('Plan your visit', 'დაგეგმეთ ვიზიტი') }} · {{ settings.get('business_name') or 'Mestia' }}{% endblock %}
+{% block title %}{{ tr('Request booking', 'ჯავშნის მოთხოვნა') if choice.service else tr('Something different?', 'განსხვავებული გეგმა?') }} · {{ settings.get('business_name') or 'Mestia' }}{% endblock %}
 {% block head %}<link rel="stylesheet" href="/static/enquiry.css">{% endblock %}
 {% block content %}
 <section class="wrap enquiry-shell" aria-labelledby="enquiry-title">
   <header class="enquiry-heading">
-    <div><p class="eyebrow">{{ tr('Your next mountain day', 'თქვენი შემდეგი დღე მთაში') }}</p><h1 id="enquiry-title">{{ tr('Where shall we go?', 'სად წავიდეთ?') }}</h1><p>{{ tr('A few details. We’ll take it from here.', 'რამდენიმე დეტალი — დანარჩენს ერთად დავგეგმავთ.') }}</p></div>
+    <div><p class="eyebrow">{{ tr('Your next mountain day', 'თქვენი შემდეგი დღე მთაში') }}</p><h1 id="enquiry-title">{{ tr('Request booking', 'ჯავშნის მოთხოვნა') if choice.service else tr('Something different?', 'განსხვავებული გეგმა?') }}</h1><p>{{ tr('Your trip is picked. Just add your date, group and contact details.', 'ტური არჩეულია. დაამატეთ თარიღი, ჯგუფის ზომა და საკონტაქტო ინფორმაცია.') if choice.service else tr('Tell us what you couldn’t find in the catalogue.', 'მოგვწერეთ, რა ვერ იპოვეთ კატალოგში.') }}</p></div>
     <img src="/static/destinations/tower-village.svg" alt="" width="124" height="124" class="enquiry-heading-art">
   </header>
+  {% if not choice.service %}<p class="enquiry-catalogue-link"><a href="/services?lang={{ lang }}">← {{ tr('Browse trips & stays first', 'ჯერ ნახეთ ტურები და განთავსება') }}</a> <a href="{{ url_for('faq', lang=lang) }}">{{ tr('Read the FAQ', 'ხშირი კითხვები') }} →</a></p>{% endif %}
   <form class="quick-enquiry" method="post" action="/request?lang={{ lang }}" data-request-form>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="request_key" value="{{ request_key }}"><input type="hidden" name="request_format" value="quick"><input type="hidden" id="kind" name="kind" value="{{ request_kind }}">
     <div hidden class="spam-trap" aria-hidden="true"><label for="website">Website</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
     {% if error %}<div class="notice notice-error" role="alert">{{ error }}</div>{% endif %}
-    <nav class="enquiry-kinds" aria-label="{{ tr('What would you like to arrange?', 'რისი დაგეგმვა გსურთ?') }}">
+    {% if not choice.service %}<nav class="enquiry-kinds" aria-label="{{ tr('What would you like to arrange?', 'რისი დაგეგმვა გსურთ?') }}">
       {% for kind, en, ka, icon in [('tour', 'Tours', 'ტური', 'M3 19 10 5l4 8 3-5 5 11H3ZM8 9l2 3 2-3'), ('stay', 'Stay', 'დარჩენა', 'M3 11 12 3l9 8M5 10v11h14V10M9 21v-8h6v8'), ('taxi', 'Transfer', 'ტრანსფერი', 'm5 6-2 7v6h18v-6l-2-7H5ZM3 13h18M7 16h1m8 0h1M6 19v2m12-2v2'), ('combined', 'Your own plan', 'თქვენი გეგმა', 'M5 4h14v17H5V4Zm4-2v4m6-4v4M9 11h6m-6 5h4')] %}
       <a href="/request?kind={{ kind }}&amp;lang={{ lang }}" data-kind-choice="{{ kind }}" {% if request_kind == kind %}aria-current="page"{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ icon }}"/></svg><span>{{ tr(en, ka) }}</span></a>
       {% endfor %}
-    </nav>
+    </nav>{% endif %}
     <div class="enquiry-fields">
       <div class="field enquiry-trip-field">
-        <label for="service_ids">{{ tr('Choose a trip', 'აირჩიეთ შეთავაზება') }} <span>{{ tr('(optional)', '(არასავალდებულო)') }}</span></label>
+        {% if choice.service %}<input type="hidden" id="service_ids" name="service_ids" value="{{ choice.service.id }}"><div class="enquiry-choice-heading"><span>{{ tr('Your selection', 'თქვენი არჩევანი') }}</span><a href="/services?kind={{ choice.service.kind }}&amp;lang={{ lang }}">{{ tr('Change activity', 'შეთავაზების შეცვლა') }}</a></div>{% else %}
+        <label for="service_ids">{{ tr('Related activity', 'შესაბამისი შეთავაზება') }} <span>{{ tr('(optional)', '(არასავალდებულო)') }}</span></label>
         <select id="service_ids" name="service_ids" data-service-select>
-          <option value="">{{ tr('Help me choose', 'დამეხმარეთ არჩევაში') }}</option>
+          <option value="">{{ tr('A different idea', 'განსხვავებული იდეა') }}</option>
           {% for svc in services %}<option value="{{ svc.id }}" data-kind="{{ svc.kind }}" data-title="{{ (svc.title_ka if lang == 'ka' else svc.title_en) or svc.title_en }}" data-duration="{{ svc.duration or '' }}" data-base="{{ svc.base_location or '' }}" data-image="{{ svc.image_path or '/static/destinations/mountain-valley.svg' }}" {% if choice.service and choice.service.id == svc.id %}selected{% endif %}{% if request_kind != 'combined' and svc.kind != request_kind %} hidden disabled{% endif %}>{{ (svc.title_ka if lang == 'ka' else svc.title_en) or svc.title_en }}</option>{% endfor %}
-        </select>
+        </select>{% endif %}
         <div class="enquiry-trip-recap" data-trip-recap {% if not choice.service %}hidden{% endif %}>
           <img data-trip-image src="{{ choice.service.image_path if choice.service and choice.service.image_path else '/static/destinations/mountain-valley.svg' }}" width="60" height="60" alt="">
           <div><strong data-trip-title>{{ ((choice.service.title_ka if lang == 'ka' else choice.service.title_en) or choice.service.title_en) if choice.service else '' }}</strong><span data-trip-facts>{% if choice.service %}{{ choice.service.base_location or '' }}{% if choice.service.base_location and choice.service.duration %} · {% endif %}{{ choice.service.duration or '' }}{% endif %}</span></div>
         </div>
       </div>
       <div class="enquiry-dates-guests">
-        <div class="field" data-kind-panel="tour taxi combined" {% if request_kind == 'stay' %}hidden{% endif %}><label for="request_date">{{ tr('Start date', 'დაწყების თარიღი') }}</label><input id="request_date" name="request_date" type="date" value="{{ f.get('request_date', '') }}" data-required-kind="tour taxi combined" {% if request_kind != 'stay' %}required{% else %}disabled{% endif %}></div>
+        <div class="field" data-kind-panel="tour taxi combined" {% if request_kind == 'stay' %}hidden{% endif %}><label for="request_date">{{ tr('Preferred date', 'სასურველი თარიღი') }}</label><input id="request_date" name="request_date" type="date" value="{{ f.get('request_date', '') }}" data-required-kind="tour taxi combined" {% if request_kind != 'stay' %}required{% else %}disabled{% endif %}></div>
         <div class="field" data-kind-panel="stay" {% if request_kind != 'stay' %}hidden{% endif %}><label for="check_in">{{ tr('Check-in', 'ჩამოსვლა') }}</label><input id="check_in" name="check_in" type="date" value="{{ f.get('check_in', '') }}" data-required-kind="stay" {% if request_kind == 'stay' %}required{% else %}disabled{% endif %}></div>
         <div class="field" data-kind-panel="stay" {% if request_kind != 'stay' %}hidden{% endif %}><label for="check_out">{{ tr('Check-out', 'გამგზავრება') }}</label><input id="check_out" name="check_out" type="date" value="{{ f.get('check_out', '') }}" data-required-kind="stay" {% if request_kind == 'stay' %}required{% else %}disabled{% endif %}></div>
         <div class="field enquiry-guests"><label for="party_size">{{ tr('Guests', 'სტუმრები') }}</label><input id="party_size" name="party_size" type="number" min="1" max="100" value="{{ f.get('party_size', '2') }}" required inputmode="numeric"></div>
@@ -45,20 +47,20 @@
       </div>
       <div class="field-row enquiry-contact"><div class="field"><label for="name">{{ tr('Your name', 'თქვენი სახელი') }}</label><input id="name" name="name" value="{{ f.get('name', '') }}" autocomplete="name" maxlength="160" required placeholder="{{ tr('First name is fine', 'სახელიც საკმარისია') }}"></div><div class="field"><label for="contact">{{ tr('WhatsApp / phone', 'WhatsApp / ტელეფონი') }}</label><input id="contact" name="contact" type="tel" value="{{ f.get('contact', '') }}" autocomplete="tel" maxlength="80" required placeholder="{{ tr('+ country code and number', '+ ქვეყნის კოდი და ნომერი') }}"></div></div>
       <details class="enquiry-extras" {% if f.get('notes') or f.get('email') or f.get('luggage') or request_kind == 'combined' %}open{% endif %}>
-        <summary><span>{{ tr('A few more details', 'დამატებითი დეტალები') }} <small>{{ tr('(optional)', '(არასავალდებულო)') }}</small></span><span class="enquiry-expand" aria-hidden="true">+</span></summary>
+        <summary><span>{{ tr('Add a note', 'დაამატეთ შენიშვნა') }} <small>{{ tr('(optional)', '(არასავალდებულო)') }}</small></span><span class="enquiry-expand" aria-hidden="true">+</span></summary>
         <div class="enquiry-extras-body">
-          <div class="field"><label for="notes">{{ tr('Anything on your mind?', 'კიდევ რას გვეტყოდით?') }}</label><textarea id="notes" name="notes" rows="3" maxlength="4000" placeholder="{{ tr('A trail you’ve been dreaming of, flexible dates, travelling with children…', 'სასურველი მარშრუტი, მოქნილი თარიღები, ბავშვებთან ერთად მოგზაურობა…') }}">{{ f.get('notes', '') }}</textarea></div>
+          <div class="field"><label for="notes">{{ tr('Anything we should know?', 'რა უნდა გავითვალისწინოთ?') }}</label><textarea id="notes" name="notes" rows="3" maxlength="4000" placeholder="{{ tr('Flexible dates, children, access needs or a question about this trip…', 'მოქნილი თარიღები, ბავშვები, ხელმისაწვდომობის საჭიროებები ან კითხვა ტურზე…') if choice.service else tr('The place or experience you have in mind…', 'სასურველი ადგილი ან აქტივობა…') }}">{{ f.get('notes', '') }}</textarea></div>
           <div class="field" data-kind-panel="taxi" {% if request_kind != 'taxi' %}hidden{% endif %}><label for="luggage">{{ tr('Bags & travel needs', 'ბარგი და სხვა საჭიროებები') }}</label><input id="luggage" name="luggage" value="{{ f.get('luggage', '') }}" maxlength="300" placeholder="{{ tr('Bags, child seats or accessibility needs', 'ბარგი, ბავშვის სავარძელი ან სხვა საჭიროება') }}" {% if request_kind != 'taxi' %}disabled{% endif %}></div>
           <div class="field"><label for="email">{{ tr('Email', 'ელფოსტა') }}</label><input id="email" name="email" type="email" value="{{ f.get('email', '') }}" autocomplete="email" maxlength="254" placeholder="you@example.com"></div>
         </div>
       </details>
       <div class="enquiry-send">
         <label class="check-line"><input type="checkbox" name="privacy_consent" value="on" required {% if f.get('privacy_consent') %}checked{% endif %}><span>{{ tr('I agree to be contacted about this enquiry and have read the', 'ვეთანხმები ამ მოთხოვნის შესახებ დაკავშირებას და გავეცანი') }} <a href="/privacy?lang={{ lang }}" target="_blank" rel="noopener">{{ tr('privacy notice', 'კონფიდენციალურობის ინფორმაციას') }}</a>.</span></label>
-        <button class="button button-full" type="submit">{{ tr('Let’s plan it', 'დავგეგმოთ') }} <span aria-hidden="true">↗</span></button>
-        <p>{{ tr('No payment now. We’ll confirm the plan and price with you.', 'ახლა გადახდა არ გჭირდებათ. გეგმასა და ფასს თქვენთან შევათანხმებთ.') }}</p>
+        <button class="button button-full" type="submit">{{ tr('Send booking request', 'ჯავშნის მოთხოვნის გაგზავნა') if choice.service else tr('Send enquiry', 'მოთხოვნის გაგზავნა') }} <span aria-hidden="true">↗</span></button>
+        <p>{{ tr('No payment now. Your booking is confirmed only after availability, price and terms are agreed.', 'ახლა გადახდა არ გჭირდებათ. ჯავშანი დადასტურდება ხელმისაწვდომობის, ფასისა და პირობების შეთანხმების შემდეგ.') }}</p>
       </div>
     </div>
   </form>
-  {% if settings.get('whatsapp_url') %}<p class="enquiry-whatsapp">{{ tr('Rather have a chat?', 'საუბარი გირჩევნიათ?') }} <a href="{{ settings.whatsapp_url }}" target="_blank" rel="noopener noreferrer">{{ tr('Find us on WhatsApp', 'მოგვწერეთ WhatsApp-ზე') }} ↗</a></p>{% endif %}
+  <p class="enquiry-whatsapp">{{ tr('A question before you send?', 'გაგზავნამდე კითხვა გაქვთ?') }} <a href="{{ url_for('faq', lang=lang) }}">{{ tr('Check the FAQ', 'ნახეთ ხშირი კითხვები') }} →</a></p>
 </section>
 {% endblock %}

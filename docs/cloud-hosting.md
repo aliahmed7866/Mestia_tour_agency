@@ -55,7 +55,7 @@ Official setup references: [existing Flask applications](https://help.pythonanyw
 
 ## Review and enable search indexing
 
-Before inviting guests, review the published service details, contact number, actual photos, privacy notice and booking/cancellation terms in the admin panel. Research presets stay drafts until you publish them. Test an enquiry and a staff login over HTTPS. The application never invents availability or confirms a booking from an enquiry.
+Before inviting guests, review the published service details, contact number, actual photos, privacy notice and booking/cancellation terms in the admin panel. The one-time catalogue launch opens eight untouched Svaneti day outings to requests; eleven further proposals remain drafts, and existing owner edits, disabled routes and deletions are preserved. Review the public FAQ and test an activity booking request and a staff login over HTTPS. The application never invents availability or confirms a booking from a request.
 
 Run the app's deployment check in the hosting Bash console:
 

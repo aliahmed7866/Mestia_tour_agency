@@ -21,7 +21,9 @@ In Admin Settings, add approved destination photos to the three slideshow slots 
 
 ## Edit, publish or remove an offering
 
-Go to **Services** and select **Drafts** to find the 19 researched route presets. Open **Edit** for a single offering. The groups cover the name and story, route and itinerary, season and weather alternative, meeting point, walking/driving, requirements, inclusions/exclusions, prices and photos. English and Georgian fields are independent; blank Georgian fields use English on the public page. Enter a three-letter currency and a price basis such as per group or per vehicle when supplying a rate. A blank price requests a quote. The group-size field does not create bookable inventory.
+Go to **Services** to find the 19 researched route presets. The one-time catalogue launch opens eight untouched Svaneti day outings to requests and leaves eleven proposals as drafts. It preserves existing edits, disabled routes and deletions; later restarts never republish an offering you disable. See the [launch details](catalogue-launch.md).
+
+Open **Edit** for a single offering. The groups cover the name and story, route and itinerary, season and weather alternative, meeting point, walking/driving, requirements, inclusions/exclusions, prices and photos. English and Georgian fields are independent; blank Georgian fields use English on the public page. Enter a three-letter currency and a price basis such as per group or per vehicle when supplying a rate. A blank price requests a quote. The group-size field does not create bookable inventory.
 
 Research sources, checked date and operator notes are private. Check the proposed route against current local access, available guides/drivers and accommodation before publishing. The month checkboxes drive catalogue filtering; they neither reserve resources nor approve a departure. A four-day trek's arrival night, onward travel and weather buffer must be reflected in the final guest quote. See the [research notes](offering-research.md) and [short-break additions](short-break-research.md) for the evidence and route choices.
 
@@ -29,7 +31,9 @@ Use **Preview** to see a draft without making it public. **Publish** makes it vi
 
 ## An enquiry is not a reservation
 
-The short website form asks for a preferred start date, guests, name and phone, with optional notes. Transfer requests also need pickup and destination; departure time is optional. Stays use check-in and check-out dates. A website request enters the enquiry queue and gives the guest a reference and private status link. No stock is reserved merely because a request exists. Enter direct phone and WhatsApp requests in the same queue so they follow the same checks.
+Guests choose an activity from the catalogue and select **Request booking**. The short form retains that activity and asks for a preferred start date, guests, name and phone, with optional notes. Transfer requests also need pickup and destination; departure time is optional. Stays use check-in and check-out dates. A website request enters the enquiry queue and gives the guest a reference and private status link. No stock is reserved merely because a request exists. Enter direct phone and WhatsApp requests in the same queue so they follow the same checks.
+
+The public **FAQ** at `/faq` explains booking, prices, seasons, weather and what happens after a request. Visitors are directed there before general contact; a custom request remains available for plans outside the catalogue.
 
 Review the guest's needs, verify the contact through an actual two-way conversation and record evidence. A typed phone number or opening a WhatsApp link is not verification.
 
@@ -75,4 +79,6 @@ Each quote supports one taxi leg. Additional legs need separate enquiries and qu
 
 The website now includes the supplied card's five service categories and Riverside Svaneti Guest House. Edit or pause them in Services. These listings have no price or inventory until you configure them. For a 4x4 tour, reserve the appropriate guide/driver and vehicle for its entire route, including travel buffers.
 
-Settings accepts either a full international WhatsApp number or the supplied QR business link. A configured number takes priority and allows guest-reference prefill. The QR destination cannot promise a prefilled message; guests are shown the reference to include manually. The guesthouse and guide Instagram profile fields are separate. Keep the guide field blank until its exact profile is confirmed.
+Settings accepts either a full international WhatsApp number (country code and digits only) or the supplied QR business link. A configured number takes priority: activity links prefill the activity title and page link, and guest status links prefill the request reference. Guests can edit the message in WhatsApp before sending. With only the QR link, activity pages show an editable message with **Copy message** and **Open WhatsApp** controls; guests paste it into the chat themselves. Status pages show the reference to include manually. None of these controls sends a message.
+
+The guesthouse and guide Instagram fields are separate and contain the supplied `riverside_svaneti` and `guledaniakaki` profiles. Update them in Settings if those profiles change.

@@ -109,6 +109,22 @@ def settings_data():
     return data
 
 
+def activity_contact(item):
+    """Build a draft about the chosen activity; opening it never sends it."""
+    title = (item.get('title_ka') if g.lang == 'ka' else item['title_en']) or item['title_en']
+    if g.lang == 'ka':
+        message = f'გამარჯობა! მაინტერესებს: {title}\nსასურველი თარიღი: \nსტუმრების რაოდენობა: \nჩემი შეკითხვა: '
+    else:
+        message = f"Hi! I'm interested in: {title}\nPreferred date: \nGuests: \nMy question: "
+    origin = current_app.config.get('PUBLIC_URL', '')
+    # A configured public address is useful to guests. A Termux localhost URL
+    # would point at their own phone, so use a stable activity reference there.
+    message += '\n' + (origin + service_url(item, g.lang) if origin else f"Activity reference: {item['id']}")
+    url, prefilled = whatsapp_contact(settings_data(), message)
+    return dict(activity_whatsapp_url=url, activity_whatsapp_prefilled=prefilled,
+                activity_whatsapp_message=message)
+
+
 def audit(action, kind, identifier, details=''):
     get_db().execute('INSERT INTO audit(actor_id,action,entity_type,entity_id,details,created_at) VALUES (?,?,?,?,?,?)',
                      (g.user['id'] if g.get('user') else None, action, kind, identifier, json.dumps({'note': details}), now_iso()))
@@ -354,7 +370,7 @@ def register_routes(app):
 
     @app.get('/')
     def home():
-        return render_template('home.html', services=rows('SELECT * FROM services WHERE published=1 AND archived_at IS NULL ORDER BY id DESC LIMIT 6'))
+        return render_template('home.html', services=rows("SELECT * FROM services WHERE published=1 AND archived_at IS NULL ORDER BY CASE WHEN itinerary_en<>'' THEN 0 ELSE 1 END,id DESC LIMIT 6"))
 
     @app.get('/services')
     def services():
@@ -383,7 +399,7 @@ def register_routes(app):
         if month:
             query += " AND instr(',' || season_months || ',',?)>0"
             params.append(',' + month + ',')
-        data = rows(query + ' ORDER BY id DESC', params)
+        data = rows(query + " ORDER BY CASE WHEN itinerary_en<>'' THEN 0 ELSE 1 END,id DESC", params)
         regions = [record['region'] for record in rows("SELECT DISTINCT region FROM services WHERE published=1 AND archived_at IS NULL AND region<>'' ORDER BY region")]
         activities = [record['activity'] for record in rows("SELECT DISTINCT activity FROM services WHERE published=1 AND archived_at IS NULL AND activity<>'' ORDER BY activity")]
         return render_template('services.html', services=data, kind=kind,
@@ -407,7 +423,11 @@ def register_routes(app):
             abort(404)
         if slug != item['slug']:
             return redirect(service_url(item, g.lang), code=301)
-        return render_template('service.html', service=item)
+        return render_template('service.html', service=item, **activity_contact(item))
+
+    @app.get('/faq')
+    def faq():
+        return render_template('faq.html')
 
     @app.get('/visit-svaneti')
     def travel_guide():
