@@ -67,6 +67,8 @@ CREATE TABLE IF NOT EXISTS enquiries (
  kind TEXT NOT NULL CHECK(kind IN ('tour','stay','taxi','combined')),
  service_id INTEGER REFERENCES services(id), name TEXT NOT NULL, email TEXT NOT NULL DEFAULT '',
  phone TEXT NOT NULL DEFAULT '', starts_at TEXT NOT NULL, ends_at TEXT NOT NULL,
+ requested_date TEXT NOT NULL DEFAULT '', requested_time TEXT NOT NULL DEFAULT '',
+ timing_pending INTEGER NOT NULL DEFAULT 0 CHECK(timing_pending IN (0,1)),
  party_size INTEGER NOT NULL CHECK(party_size > 0), pickup TEXT NOT NULL DEFAULT '',
  destination TEXT NOT NULL DEFAULT '', luggage TEXT NOT NULL DEFAULT '',
  notes TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT 'website',
@@ -157,6 +159,7 @@ CREATE INDEX IF NOT EXISTS quotes_expiry ON quotes(status,expires_at);
 
 def init_db(conn):
     conn.executescript(SCHEMA)
+    migrate_enquiry_preferences(conn)
     from .catalogue import migrate_catalogue
     migrate_catalogue(conn)
     seed_defaults(conn)
@@ -165,6 +168,24 @@ def init_db(conn):
     apply_guide_profile(conn)
     from .offering_presets import apply_offering_presets
     apply_offering_presets(conn)
+
+
+def migrate_enquiry_preferences(conn):
+    """Preserve older enquiries while recording date-only request preferences."""
+    conn.execute('BEGIN IMMEDIATE')
+    try:
+        columns = {item['name'] for item in conn.execute('PRAGMA table_info(enquiries)')}
+        for name, definition in (
+            ('requested_date', "TEXT NOT NULL DEFAULT ''"),
+            ('requested_time', "TEXT NOT NULL DEFAULT ''"),
+            ('timing_pending', 'INTEGER NOT NULL DEFAULT 0 CHECK(timing_pending IN (0,1))'),
+        ):
+            if name not in columns:
+                conn.execute(f'ALTER TABLE enquiries ADD COLUMN {name} {definition}')
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
 
 
 def seed_defaults(conn):

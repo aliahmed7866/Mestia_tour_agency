@@ -139,29 +139,64 @@ def enquiry_input(form, source='website'):
     kind = form.get('kind', 'combined')
     if kind not in KINDS:
         raise ValueError('Choose a valid service type.')
+    ids = form.getlist('service_ids') if hasattr(form, 'getlist') else []
+    selected = []
+    for value in ids[:10]:
+        if not value.strip():
+            continue
+        service = row('SELECT id,title_en,kind,duration_days FROM services WHERE id=? AND published=1 AND archived_at IS NULL', (integer(value),))
+        if not service:
+            raise ValueError('That trip is no longer taking requests. Please choose another.')
+        if kind != 'combined' and service['kind'] != kind:
+            raise ValueError('Choose a trip that matches your request type.')
+        selected.append(service)
+    quick = source == 'website' and form.get('request_format') == 'quick'
+    preferences = {}
     if kind == 'stay':
         start = scheduled(form.get('check_in'), 'Check-in date')
         end = scheduled(form.get('check_out'), 'Check-out date')
+    elif quick:
+        preferred_date = form.get('request_date', '').strip()
+        try:
+            if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', preferred_date):
+                raise ValueError()
+            local_start = datetime.strptime(preferred_date, '%Y-%m-%d').replace(tzinfo=TBILISI)
+        except ValueError:
+            raise ValueError('Choose a valid travel date.') from None
+        if local_start.date() < datetime.now(TBILISI).date():
+            raise ValueError('Choose today or a later travel date.')
+        preferred_time = form.get('departure_time', '').strip() if kind == 'taxi' else ''
+        if preferred_time:
+            if not re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d', preferred_time):
+                raise ValueError('Use a valid departure time, such as 09:30.')
+            hour, minute = map(int, preferred_time.split(':'))
+            local_start = local_start.replace(hour=hour, minute=minute)
+            if local_start <= datetime.now(TBILISI):
+                raise ValueError('Choose a departure time that has not passed.')
+        days = max((service['duration_days'] or 1 for service in selected), default=1)
+        # These bounds support enquiry sorting/filtering only. They are never
+        # a promised schedule or inventory hold; quote_input requires real times.
+        try:
+            start = scheduled(local_start.isoformat())
+            end = scheduled((local_start + timedelta(days=days)).isoformat())
+        except (OverflowError, ValueError):
+            raise ValueError('Choose a travel date within the supported calendar.') from None
+        preferences = dict(requested_date=preferred_date, requested_time=preferred_time, timing_pending=1)
     else:
         start = scheduled(form.get('start_local'), 'Start time')
         end = scheduled(form.get('end_local'), 'End time')
     if end <= start:
         raise ValueError('End or check-out must be after the start or check-in.')
-    if start < now_iso() and source == 'website':
+    if source == 'website' and not quick and start < now_iso():
         raise ValueError('Choose a future date for your request.')
+    if quick and kind == 'stay' and local(start)[:10] < datetime.now(TBILISI).date().isoformat():
+        raise ValueError('Choose today or a later check-in date.')
     phone = required(form.get('contact'), 'Phone or WhatsApp number', 50)
     if len(re.sub(r'\D', '', phone)) < 7:
         raise ValueError('Enter a reachable phone number including the country code.')
     email = form.get('email', '').strip()
     if email and (len(email) > 254 or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', email)):
         raise ValueError('Enter a valid email address.')
-    ids = form.getlist('service_ids') if hasattr(form, 'getlist') else []
-    selected = []
-    for value in ids[:10]:
-        service = row('SELECT id,title_en FROM services WHERE id=? AND published=1 AND archived_at IS NULL', (integer(value),))
-        if not service:
-            raise ValueError('A selected service is no longer available for requests.')
-        selected.append(service)
     notes = form.get('notes', '').strip()
     if kind == 'combined' and (form.get('check_in') or form.get('check_out')):
         check_in = scheduled(form.get('check_in'), 'Check-in date')
@@ -177,6 +212,7 @@ def enquiry_input(form, source='website'):
                 luggage=form.get('luggage', '')[:500], notes=notes[:4000], source=source, language=g.lang,
                 service_id=selected[0]['id'] if selected else None,
                 idempotency_key=form.get('request_key') or secrets.token_urlsafe(24))
+    data.update(preferences)
     if kind == 'taxi' and (not data['pickup'].strip() or not data['destination'].strip()):
         raise ValueError('Pickup and destination are required for a taxi.')
     return data
@@ -325,6 +361,20 @@ def register_routes(app):
     @app.route('/request', methods=['GET', 'POST'])
     def enquiry_request():
         error = None
+        selected_service = None
+        selected_value = request.args.get('service_id', '') if request.method == 'GET' else request.form.get('service_ids', '')
+        if selected_value:
+            try:
+                selected_service = row('SELECT * FROM services WHERE id=? AND published=1 AND archived_at IS NULL', (integer(selected_value),))
+            except ValueError:
+                selected_service = None
+            if request.method == 'GET' and not selected_service:
+                abort(404)
+        requested_kind = request.form.get('kind', 'tour') if request.method == 'POST' else request.args.get('kind', 'tour')
+        if request.method == 'GET' and selected_service:
+            requested_kind = selected_service['kind']
+        if requested_kind not in KINDS:
+            requested_kind = 'tour'
         if request.method == 'POST':
             try:
                 key = request.form.get('request_key', '')
@@ -354,7 +404,8 @@ def register_routes(app):
                 error = str(exc) if isinstance(exc, ValueError) else 'This request was already received. Please use your saved private link.'
         session.setdefault('request_key', secrets.token_urlsafe(24))
         return render_template('request.html', services=rows('SELECT * FROM services WHERE published=1 AND archived_at IS NULL'),
-                               selected_service_id=request.args.get('service_id', type=int),
+                               selected_service_id=selected_service['id'] if selected_service else None,
+                               selected_service=selected_service, request_kind=requested_kind,
                                request_key=session['request_key'], form=request.form, error=error), (400 if error else 200)
 
     @app.get('/booking/<token>')
@@ -474,6 +525,8 @@ def quote_input(e):
         if kind not in {'tour', 'stay', 'taxi'}:
             raise ValueError('Choose tour, stay or taxi for each quote item.')
         service_id = field('item_service_id', i)
+        if e.get('timing_pending') and (not field('item_start', i).strip() or not field('item_end', i).strip()):
+            raise ValueError('Agree the schedule with the guest, then enter a start and end for each quote item.')
         index_map[i] = len(items)
         items.append(dict(title=required(title, 'Item title', 200), kind=kind,
                           service_id=integer(service_id) if service_id else None,
@@ -587,7 +640,7 @@ def register_admin(app):
         share = session.get('share', {})
         share_url = url_for('status', token=share['token'], _external=True) if share.get('enquiry_id') == identifier else None
         history = rows("SELECT a.*,u.email AS actor FROM audit a LEFT JOIN users u ON u.id=a.actor_id WHERE (entity_type='enquiry' AND entity_id=?) OR (entity_type='quote' AND entity_id IN (SELECT id FROM quotes WHERE enquiry_id=?)) OR (entity_type='booking' AND entity_id IN (SELECT id FROM bookings WHERE enquiry_id=?)) ORDER BY a.id DESC LIMIT 100", (identifier,identifier,identifier))
-        duplicates = rows('SELECT id,reference,status,starts_at FROM enquiries WHERE phone=? AND id<>? ORDER BY created_at DESC LIMIT 10', (e['phone'],identifier))
+        duplicates = rows('SELECT id,reference,status,starts_at,requested_date,requested_time,timing_pending FROM enquiries WHERE phone=? AND id<>? ORDER BY created_at DESC LIMIT 10', (e['phone'],identifier))
         return render_template('admin_enquiry.html', e=e, duplicates=duplicates, quotes=quotes, quote=q, q=q, items=items,
                                allocations=allocations, bookings=bookings, booking=booking, payments=payments,
                                assignments=assignments, resources=rows('SELECT * FROM resources WHERE active=1 ORDER BY kind,name'),
@@ -943,7 +996,10 @@ def register_admin(app):
         if kind=='payments':
             data=rows('SELECT p.*,q.currency,e.reference AS enquiry_reference FROM payments p JOIN quotes q ON q.id=p.quote_id JOIN enquiries e ON e.id=q.enquiry_id ORDER BY p.id')
         else:
-            data=rows('''SELECT b.reference,b.status,e.name,e.phone,e.starts_at,e.ends_at,q.total_minor,q.currency,q.deposit_required_minor,b.confirmed_at
+            data=rows('''SELECT b.reference,b.status,e.name,e.phone,
+               (SELECT min(starts_at) FROM quote_items WHERE quote_id=q.id) AS starts_at,
+               (SELECT max(ends_at) FROM quote_items WHERE quote_id=q.id) AS ends_at,
+               q.total_minor,q.currency,q.deposit_required_minor,b.confirmed_at
                FROM bookings b JOIN enquiries e ON e.id=b.enquiry_id JOIN quotes q ON q.id=b.quote_id ORDER BY b.id''')
         stream=io.StringIO()
         if data:

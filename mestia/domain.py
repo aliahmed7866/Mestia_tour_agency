@@ -143,6 +143,24 @@ def create_enquiry(conn, data, actor_id=None):
         raise DomainError('Enter a valid email address.')
     interval = _stay_interval if kind == 'stay' else _interval
     start, end = interval(data.get('starts_at'), data.get('ends_at'))
+    requested_date = _text(data.get('requested_date'), 'Preferred date', 10)
+    requested_time = _text(data.get('requested_time'), 'Preferred time', 5)
+    timing_pending = _int(data.get('timing_pending', 0), 'Timing preference', 0, 1)
+    if timing_pending:
+        if kind == 'stay' or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', requested_date):
+            raise DomainError('Choose a valid preferred date.')
+        try:
+            preferred = datetime.strptime(requested_date, '%Y-%m-%d').date()
+        except ValueError:
+            raise DomainError('Choose a valid preferred date.') from None
+        local_start = _date(start).astimezone(LOCAL_TZ)
+        if preferred != local_start.date():
+            raise DomainError('The preferred date does not match the planning date.')
+        if requested_time and (kind != 'taxi' or not re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d', requested_time)
+                               or requested_time != local_start.strftime('%H:%M')):
+            raise DomainError('Choose a valid preferred departure time.')
+    elif requested_date or requested_time:
+        raise DomainError('Date preferences need a pending schedule.')
     party = _int(data.get('party_size', 1), 'Party size', 1, 200)
     service_id = data.get('service_id') or None
     key = _text(data.get('idempotency_key'), 'Submission key', 128) or None
@@ -168,10 +186,12 @@ def create_enquiry(conn, data, actor_id=None):
                   kind, service_id, name, email, phone, start, end, party,
                   _text(data.get('pickup'), 'Pickup', 400), _text(data.get('destination'), 'Destination', 400),
                   _text(data.get('luggage'), 'Luggage', 400), _text(data.get('notes'), 'Notes', 4000),
-                  _text(data.get('source', 'website'), 'Source', 80), 'ka' if data.get('language') == 'ka' else 'en', stamp, stamp)
+                  _text(data.get('source', 'website'), 'Source', 80), 'ka' if data.get('language') == 'ka' else 'en', stamp, stamp,
+                  requested_date, requested_time, timing_pending)
         cursor = conn.execute('''INSERT INTO enquiries(reference,token_hash,token_expires_at,idempotency_key,
-            kind,service_id,name,email,phone,starts_at,ends_at,party_size,pickup,destination,luggage,notes,source,language,created_at,updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', fields)
+            kind,service_id,name,email,phone,starts_at,ends_at,party_size,pickup,destination,luggage,notes,source,language,created_at,updated_at,
+            requested_date,requested_time,timing_pending)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', fields)
         audit(conn, 'enquiry.created', 'enquiry', cursor.lastrowid, {'source': fields[16]}, actor_id)
         result = _row(conn, 'enquiries', cursor.lastrowid)
         result['guest_token'] = token
@@ -278,6 +298,8 @@ def _quote(conn, enquiry_id, data, actor_id):
             if service['capacity'] and service['capacity'] < enquiry['party_size']:
                 raise DomainError('The party exceeds the service capacity.')
         interval = _stay_interval if kind == 'stay' else _interval
+        if enquiry['timing_pending'] and (not item.get('starts_at') or not item.get('ends_at')):
+            raise DomainError('Enter an agreed start and end for every quote item; the requested date is only a preference.')
         start, end = interval(item.get('starts_at', enquiry['starts_at']), item.get('ends_at', enquiry['ends_at']))
         quantity = _int(item.get('quantity', 1), 'Item quantity', 1, 10000)
         price = _int(item.get('unit_price_minor'), 'Unit price', 0, 100000000)

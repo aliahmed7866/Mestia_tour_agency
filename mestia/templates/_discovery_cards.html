@@ -1,0 +1,30 @@
+{% macro scene(svc) -%}
+{%- set subject = (svc.preset_key ~ ' ' ~ svc.title_en ~ ' ' ~ svc.activity)|lower -%}
+{%- if 'koruldi' in subject or 'lake' in subject -%}/static/destinations/alpine-lake.svg
+{%- elif svc.kind == 'stay' or 'culture' in subject or 'ushguli' in subject or 'village' in subject or 'city' in subject -%}/static/destinations/tower-village.svg
+{%- else -%}/static/destinations/mountain-valley.svg{%- endif -%}
+{%- endmacro %}
+{% macro months(svc) -%}
+{%- if svc.season_months == '1,2,3,4,5,6,7,8,9,10,11,12' -%}{{ tr('Year-round enquiries', 'მთელი წლის განმავლობაში') }}
+{%- elif svc.season_months -%}
+{%- set names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] if lang == 'en' else ['იან','თებ','მარ','აპრ','მაი','ივნ','ივლ','აგვ','სექ','ოქტ','ნოე','დეკ'] -%}
+{%- for month in svc.season_months.split(',') -%}{{ names[month|int - 1] }}{% if not loop.last %} · {% endif %}{%- endfor -%}
+{%- endif -%}
+{%- endmacro %}
+{% macro trip_card(svc, heading='h2') %}
+{% set title = (svc.title_ka if lang == 'ka' else svc.title_en) or svc.title_en %}
+<article class="trip-card">
+  <a class="trip-card-image" href="/services/{{ svc.id }}?lang={{ lang }}" tabindex="-1" aria-hidden="true"><img src="{{ svc.image_path or scene(svc)|trim }}" alt="" width="600" height="400" loading="lazy">{% if not svc.image_path %}<span class="trip-art-label">{{ tr('Illustration', 'ილუსტრაცია') }}</span>{% endif %}{% if svc.duration_days and svc.duration_days > 1 %}<span class="trip-length">{{ svc.duration_days }} {{ tr('days', 'დღე') }}</span>{% elif svc.duration %}<span class="trip-length">{{ svc.duration.split(';')[0]|truncate(42) }}</span>{% endif %}</a>
+  <div class="trip-card-body">
+    <p class="trip-category">{{ svc.region or tr('Svaneti & beyond', 'სვანეთი და სხვა რეგიონები') }} <span aria-hidden="true">/</span> {{ tr('Stay', 'განთავსება') if svc.kind == 'stay' else (tr('Transfer', 'ტრანსფერი') if svc.kind == 'taxi' else tr('Explore', 'ტური')) }}</p>
+    <{{ heading }}><a href="/services/{{ svc.id }}?lang={{ lang }}">{{ title }}</a></{{ heading }}>
+    <p class="trip-card-intro">{{ ((svc.description_ka if lang == 'ka' else svc.description_en) or svc.description_en or '')|truncate(155) }}</p>
+    {% if svc.base_location or svc.difficulty or svc.season_months %}<dl class="trip-card-facts">
+      {% if svc.base_location %}<div><dt>{{ tr('From', 'დასაწყისი') }}</dt><dd>{{ svc.base_location }}</dd></div>{% endif %}
+      {% if svc.difficulty %}<div><dt>{{ tr('Pace', 'სირთულე') }}</dt><dd>{{ svc.difficulty|truncate(72) }}</dd></div>{% endif %}
+      {% if svc.season_months %}<div><dt>{{ tr('Season', 'სეზონი') }}</dt><dd>{{ months(svc) }}</dd></div>{% endif %}
+    </dl>{% endif %}
+    <div class="trip-card-footer"><span class="trip-price">{% if svc.price_minor is not none %}<strong>{{ '%.2f'|format(svc.price_minor/100) }} {{ svc.currency }}</strong>{% if svc.price_basis %}<small>{{ svc.price_basis }}</small>{% endif %}{% else %}{{ tr('Price on request', 'ფასი მოთხოვნით') }}{% endif %}</span><a class="trip-view" href="/services/{{ svc.id }}?lang={{ lang }}">{{ tr('View stay', 'ნახეთ განთავსება') if svc.kind == 'stay' else (tr('View route', 'ნახეთ მარშრუტი') if svc.kind == 'taxi' else tr('View trip', 'ნახეთ ტური')) }} <span aria-hidden="true">↗</span></a></div>
+  </div>
+</article>
+{% endmacro %}

@@ -447,7 +447,7 @@ def test_destination_photos_can_be_replaced_preserved_and_reset(app, owner, db):
     initial = guest.get('/').text
     assert initial.count('data-destination-slide ') == 3
     assert initial.count('Photo placeholder · Illustration') == 3
-    assert 'data-destination-showcase' in guest.get('/services?kind=tour').text
+    assert 'data-destination-showcase' not in guest.get('/services?kind=tour').text
     assert 'data-destination-showcase' not in guest.get('/services?kind=stay').text
     png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a5ioAAAAASUVORK5CYII=')
     response = post(owner, '/admin/settings', {
