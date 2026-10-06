@@ -90,3 +90,6 @@ price negotiations or deposit verification are automated. All 215 tests passed;
 jsdom interaction checks covered autofill including a four-digit price, retained
 manual prices, cloned rows, date conflicts, hidden validation and submission
 recovery. Phone visual verification remains outstanding.
+
+Filled quote items require an explicit unit price; blank prices cannot silently
+become zero. The quote integration check covers rejection before saving.

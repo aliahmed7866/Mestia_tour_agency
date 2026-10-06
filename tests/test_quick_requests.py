@@ -165,6 +165,9 @@ def test_pending_enquiry_requires_explicit_quote_schedule(setup):
     data.update(item_start='2035-07-15T09:00', item_end='2035-07-15T16:00')
     guide = conn.execute("INSERT INTO resources(provider_id,name,kind,capacity,approved,active) VALUES (1,'Test guide','guide',1,1,1)").lastrowid
     data.update(allocation_resource=str(guide), allocation_item='0', allocation_quantity='1')
+    missing_price = owner.post(f"/admin/enquiries/{enquiry['id']}/quote", data=dict(data, item_price=''), follow_redirects=True)
+    assert 'Item price is required' in missing_price.text
+    assert conn.execute('SELECT count(*) FROM quotes').fetchone()[0] == 0
     owner.post(f"/admin/enquiries/{enquiry['id']}/quote", data=data)
     item = conn.execute('SELECT * FROM quote_items').fetchone()
     assert item is not None

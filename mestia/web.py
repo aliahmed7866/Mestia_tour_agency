@@ -670,7 +670,7 @@ def quote_input(e):
         items.append(dict(title=required(title, 'Item title', 200), kind=kind,
                           service_id=integer(service_id) if service_id else None,
                           quantity=integer(field('item_quantity', i, '1'), 'Quantity', 1, 1000),
-                          unit_price_minor=money(field('item_price', i), 'Item price'),
+                          unit_price_minor=money(required(field('item_price', i), 'Item price', 40), 'Item price'),
                           starts_at=scheduled(field('item_start', i) or e['starts_at']),
                           ends_at=scheduled(field('item_end', i) or e['ends_at']),
                           inclusions=field('item_inclusions', i)[:4000]))

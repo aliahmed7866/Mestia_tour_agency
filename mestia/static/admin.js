@@ -81,6 +81,7 @@ if (quoteItems) {
       const field = row.querySelector(`[name=${name}]`);
       // A catalogue reference determines type on the server too.
       if (field && (!field.dataset.edited || name === 'item_kind')) field.value = option.dataset[key] || '';
+      if (field && name === 'item_price') field.required = true;
     }
   };
   quoteItems.addEventListener('input', event => {
