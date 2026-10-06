@@ -2,7 +2,7 @@
 
 Implementation checked in the development Linux environment on 5 October 2026.
 
-- 208 automated tests pass, covering booking operations, security, backup restoration, content upgrades, catalogue lifecycle, short booking requests, cloud configuration and public SEO.
+- 215 automated tests pass, covering booking operations, security, backup restoration, content upgrades, catalogue lifecycle, short booking requests, cloud configuration and public SEO.
 - Checks include concurrent final-room allocation, whole room-night boundaries, shared-person and vehicle conflicts, travel buffers, expired holds and driver offers, stale quote acceptance, pending/verified/voided payments, refund limits, quote snapshots, guest links and rotation, taxi acceptance and reassignment, staff access restrictions, TOTP replay prevention, CSRF and backup restoration.
 - Public and admin templates render through the Flask test client. All three JavaScript files pass Node syntax checks; shell scripts pass Bash syntax checks.
 - An isolated Linux setup smoke test confirmed random secret creation, restrictive file permissions, setup rerun data preservation and ZIP backup creation.
@@ -56,3 +56,13 @@ month boundaries, form payloads, retained selections and bundle navigation.
 A real Chromium render was attempted again, but the process exited with SIGTRAP
 before opening a page; no browser screenshot or Android visual verification is
 claimed for this update.
+
+Review on 6 October 2026: removed visitor free-text search and duplicate trip
+sections; filters are optional, category-scoped and stack in one column on
+narrow screens. Checks cover legacy search redirects, bundle context through
+navigation, stale promotion review, quote types derived from linked catalogue
+items, booking-unavailable guidance, malformed snapshots and long Georgian
+offer terms. The suite continues to cover inventory conflicts, quote/payment
+boundaries, CSRF, role restrictions, backup restoration and SEO. Phone-browser
+visual verification remains outstanding; no new screenshot verification is
+claimed.

@@ -13,6 +13,7 @@
     <img src="/static/destinations/tower-village.svg" alt="" width="124" height="124" class="enquiry-heading-art">
   </header>
   {% if not choice.service %}<p class="enquiry-catalogue-link"><a href="/services?lang={{ lang }}">← {{ tr('Browse trips & stays first', 'ჯერ ნახეთ ტურები და განთავსება') }}</a> <a href="{{ url_for('faq', lang=lang) }}">{{ tr('Read the FAQ', 'ხშირი კითხვები') }} →</a></p>{% endif %}
+  {% if not settings.get('privacy_notice', '')|trim %}<div class="notice" id="request-opening-note"><strong>{{ tr('Online requests are not open yet.', 'ონლაინ მოთხოვნები ჯერ არ არის ხელმისაწვდომი.') }}</strong><p>{{ tr('The host still needs to publish the privacy information.', 'მასპინძელმა ჯერ უნდა გამოაქვეყნოს კონფიდენციალურობის ინფორმაცია.') }}</p>{% if choice.service %}<a href="{{ service_url(choice.service, lang) }}">{{ tr('Use the WhatsApp option on this activity’s page', 'გამოიყენეთ WhatsApp აქტივობის გვერდზე') }} →</a>{% elif settings.get('whatsapp_url') %}<a href="{{ settings.whatsapp_url }}" target="_blank" rel="noopener noreferrer">{{ tr('Contact on WhatsApp', 'WhatsApp-ით დაკავშირება') }} ↗</a>{% endif %}</div>{% endif %}
   <form class="quick-enquiry" method="post" action="/request?lang={{ lang }}" data-request-form>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="request_key" value="{{ request_key }}"><input type="hidden" name="request_format" value="quick"><input type="hidden" id="kind" name="kind" value="{{ request_kind }}">
     <div hidden class="spam-trap" aria-hidden="true"><label for="website">Website</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
@@ -24,7 +25,7 @@
     </nav>{% endif %}
     <div class="enquiry-fields">
       <div class="field enquiry-trip-field">
-        {% if choice.service %}<input type="hidden" id="service_ids" name="service_ids" value="{{ choice.service.id }}"><div class="enquiry-choice-heading"><span>{{ tr('Your selection', 'თქვენი არჩევანი') }}</span><a href="/services?kind={{ choice.service.kind }}&amp;lang={{ lang }}">{{ tr('Change activity', 'შეთავაზების შეცვლა') }}</a></div>{% else %}
+        {% if choice.service %}<input type="hidden" id="service_ids" name="service_ids" value="{{ choice.service.id }}"><div class="enquiry-choice-heading"><span>{{ tr('Your selection', 'თქვენი არჩევანი') }}</span><a href="{{ catalogue_url(kind=choice.service.kind) }}">{{ tr('Change activity', 'შეთავაზების შეცვლა') }}</a></div>{% else %}
         <label for="service_ids">{{ tr('Related activity', 'შესაბამისი შეთავაზება') }} <span>{{ tr('(optional)', '(არასავალდებულო)') }}</span></label>
         <select id="service_ids" name="service_ids" data-service-select>
           <option value="">{{ tr('A different idea', 'განსხვავებული იდეა') }}</option>
@@ -47,7 +48,7 @@
       </div>
       {% if choice.service and choice.service.kind == 'tour' and choice.service.provider_id == 1 and stay_offer.enabled %}
       {% set wants_stay = f.get('add_stay') == 'on' or (request.method == 'GET' and request.args.get('bundle') == '1') %}
-      <details class="bundle-choice" {% if wants_stay %}open{% endif %}><summary>{{ tr('Make it a stay & save', 'დაამატეთ განთავსება და დაზოგეთ') }} {{ stay_offer.percent }}%</summary>
+      <input type="hidden" name="stay_offer_version" value="{{ stay_offer.version }}"><details class="bundle-choice" {% if wants_stay %}open{% endif %}><summary>{{ tr('Make it a stay & save', 'დაამატეთ განთავსება და დაზოგეთ') }} {{ stay_offer.percent }}%</summary>
       <p>{{ tr('Add a Riverside Svaneti stay for your group. The saving applies to the tour service, with rooms and extras priced separately.', 'დაამატეთ Riverside Svaneti-ში განთავსება თქვენი ჯგუფისთვის. ფასდაკლება ვრცელდება ტურის მომსახურებაზე; ოთახები და დამატებითი ხარჯები ცალკე ფასდება.') }}</p>
       <label class="check-line"><input type="checkbox" name="add_stay" value="on" data-add-stay {% if wants_stay %}checked{% endif %}><span>{{ tr('Yes, include a guesthouse stay in my request', 'დიახ, დაამატეთ განთავსება ჩემს მოთხოვნას') }}</span></label>
       <div class="field-row" data-stay-dates><div class="field"><label for="bundle_check_in">{{ tr('Check-in', 'ჩამოსვლა') }}</label><input id="bundle_check_in" type="date" name="bundle_check_in" value="{{ f.get('bundle_check_in', '') }}" {% if wants_stay %}required{% endif %}></div><div class="field"><label for="bundle_check_out">{{ tr('Check-out', 'გამგზავრება') }}</label><input id="bundle_check_out" type="date" name="bundle_check_out" value="{{ f.get('bundle_check_out', '') }}" {% if wants_stay %}required{% endif %}></div></div>
@@ -63,7 +64,7 @@
       </details>
       <div class="enquiry-send">
         <label class="check-line"><input type="checkbox" name="privacy_consent" value="on" required {% if f.get('privacy_consent') %}checked{% endif %}><span>{{ tr('I agree to be contacted about this enquiry and have read the', 'ვეთანხმები ამ მოთხოვნის შესახებ დაკავშირებას და გავეცანი') }} <a href="/privacy?lang={{ lang }}" target="_blank" rel="noopener">{{ tr('privacy notice', 'კონფიდენციალურობის ინფორმაციას') }}</a>.</span></label>
-        <button class="button button-full" type="submit">{{ tr('Send booking request', 'ჯავშნის მოთხოვნის გაგზავნა') if choice.service else tr('Send enquiry', 'მოთხოვნის გაგზავნა') }} <span aria-hidden="true">↗</span></button>
+        <button class="button button-full" type="submit" {% if not settings.get('privacy_notice', '')|trim %}disabled aria-describedby="request-opening-note"{% endif %}>{{ tr('Send booking request', 'ჯავშნის მოთხოვნის გაგზავნა') if choice.service else tr('Send enquiry', 'მოთხოვნის გაგზავნა') }} <span aria-hidden="true">↗</span></button>
         <p>{{ tr('No payment now. Your booking is confirmed only after availability, price and terms are agreed.', 'ახლა გადახდა არ გჭირდებათ. ჯავშანი დადასტურდება ხელმისაწვდომობის, ფასისა და პირობების შეთანხმების შემდეგ.') }}</p>
       </div>
     </div>

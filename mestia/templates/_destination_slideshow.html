@@ -2,7 +2,7 @@
 <section class="destination-showcase wrap" data-destination-showcase role="region" aria-roledescription="{{ tr('carousel', 'სლაიდშოუ') }}" aria-label="{{ tr('Svaneti inspiration', 'სვანეთის შთაგონება') }}" data-label-play="{{ tr('Play slideshow', 'სლაიდშოუს ჩართვა') }}" data-label-pause="{{ tr('Pause slideshow', 'სლაიდშოუს შეჩერება') }}" data-slide-label="{{ tr('Slide', 'სლაიდი') }}">
   <div class="destination-heading">
     <div><p class="eyebrow">{{ tr('A little inspiration', 'ცოტა შთაგონება') }}</p><h2>{{ tr('Follow your sense of wonder.', 'გაჰყევით შთაგონებას.') }}</h2></div>
-    <p>{{ tr('Big horizons. Quiet corners. Your next mountain story starts with a conversation.', 'უსასრულო ჰორიზონტები. მშვიდი კუთხეები. თქვენი მთის ამბავი საუბრით იწყება.') }}</p>
+    <p>{{ tr('Big horizons. Quiet corners. Find a route for your next mountain day.', 'უსასრულო ჰორიზონტები. მშვიდი კუთხეები. თქვენი მთის ამბავი საუბრით იწყება.') }}</p>
   </div>
   <div class="destination-stage">
     {% for slide in destination_slides %}
@@ -13,7 +13,7 @@
         <p class="destination-kicker">{{ tr('Svaneti, at your own pace', 'სვანეთი თქვენს რიტმში') }}</p>
         <h3 data-slide-title>{{ tr(slide.title_en, slide.title_ka) }}</h3>
         <p class="destination-subtitle">{{ tr(slide.subtitle_en, slide.subtitle_ka) }}</p>
-        {% if slide.href %}<a class="destination-link" href="{{ slide.href }}">{{ tr('Plan a day like this', 'დაგეგმეთ ასეთი დღე') }} <span aria-hidden="true">↗</span></a>{% endif %}
+        <a class="destination-link" href="{{ catalogue_url(kind='tour') }}">{{ tr('Explore these trips', 'დაგეგმეთ ასეთი დღე') }} <span aria-hidden="true">↗</span></a>
       </div>
     </article>
     {% endfor %}

@@ -4,6 +4,21 @@ Reviewed 5 October 2026 against the supplied Mestia Travel project brief. This
 is a source-informed design review, not a usability study with this company's
 guests. Conversion improvements have not yet been measured.
 
+
+## Refinement on 6 October 2026
+
+Following owner feedback, free-text visitor search was removed. The homepage
+now has one three-trip selection rather than two overlapping trip sections.
+Filters sit behind one optional disclosure, retain active selections and only
+show choices from the current service category. The destination slideshow and
+owner-managed images remain. These refinements supersede the initial search
+and separate illustrated-choice implementation described below.
+
+Stay-offer context persists when changing trips, clearing filters and following
+listing redirects. A changed offer requires the guest to review its new rate
+and terms before resubmitting. Quote item types follow linked catalogue records,
+and excluded extras should use separate lines without a catalogue reference.
+
 ## Findings applied
 
 | Evidence | Change in this app | Intended benefit |

@@ -90,8 +90,9 @@ The database, uploads and secret stay on the device unless you arrange a protect
 
 ### Discovery and stay offer
 
-The homepage now offers destination search and illustrated route choices. The
-catalogue supports effort as well as region, duration, activity and season.
+The homepage offers three featured trips and clear tours, stays and transfer
+choices. Optional catalogue filters cover effort, region, duration, activity
+and season; there is no free-text visitor search.
 Guests can add Riverside dates to a tour request for a 10% tour-service saving.
 The owner controls the rate, terms and visibility in Settings; eligible quote
 items are checked and discounted on the server. Rooms and extras are excluded.

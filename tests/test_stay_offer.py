@@ -1,4 +1,5 @@
 import json
+import re
 from urllib.parse import urlencode
 
 import pytest
@@ -27,7 +28,11 @@ def send_bundle(app, tour, **changes):
     guest = app.test_client()
     updates = dict(service_ids=str(tour['id']), add_stay='on', bundle_check_in='2035-07-14', bundle_check_out='2035-07-17')
     updates.update(changes)
-    response = guest.post('/request', data=request_data(guest, **updates))
+    data = request_data(guest, **updates)
+    page = guest.get('/request?service_id=' + str(tour['id']))
+    version = re.search(r'name="stay_offer_version" value="([^"]+)"', page.text)
+    if version: data['stay_offer_version'] = version[1]
+    response = guest.post('/request', data=data)
     return guest, response
 
 
@@ -116,7 +121,7 @@ def test_admin_quote_records_actual_discount_and_settings_cannot_rewrite_it(site
     e = dict(conn.execute('SELECT * FROM enquiries').fetchone())
     owner = staff_client(app, conn)
     payload = dict(csrf_token='staff-csrf', item_title=['Mountain day', 'Riverside stay'],
-                   item_kind=['tour', 'stay'], item_service_id=[str(tour['id']), str(stay['id'])],
+                   item_kind=['tour', 'tour'], item_service_id=[str(tour['id']), str(stay['id'])],
                    item_quantity=['1', '2'], item_price=['200', '90'],
                    item_start=['2035-07-15T09:00', '2035-07-14T00:00'],
                    item_end=['2035-07-15T17:00', '2035-07-17T00:00'],
@@ -131,16 +136,19 @@ def test_admin_quote_records_actual_discount_and_settings_cannot_rewrite_it(site
     assert dict(conn.execute('SELECT * FROM quotes').fetchone()) == quote
 
 
-def test_search_and_effort_filters_are_public_only_and_noindex(site):
+def test_effort_filter_is_public_only_and_noindex(site):
     app, conn, tour, stay = site
     guest = app.test_client()
-    page = guest.get('/services?' + urlencode({'q': tour['title_en'], 'difficulty': tour['difficulty']}))
+    conn.execute("UPDATE services SET difficulty='Distinct effort value' WHERE id=?", (tour['id'],))
+    path = '/services?' + urlencode({'difficulty': 'Distinct effort value'})
+    page = guest.get(path)
     assert page.status_code == 200 and 'noindex' in page.headers['X-Robots-Tag']
     assert tour['title_en'] in page.text
     conn.execute('UPDATE services SET published=0 WHERE id=?', (tour['id'],))
-    assert '0 options to explore' in guest.get('/services?' + urlencode({'q': tour['title_en']})).text
-    assert guest.get('/services?q=' + 'a' * 101).status_code == 400
-    assert guest.get('/services?q=%25').status_code == 200  # literal %, not SQL wildcard
+    assert '0 options to explore' in guest.get(path).text
+    legacy = guest.get('/services?q=old+search&kind=tour&bundle=1&lang=ka')
+    assert legacy.status_code == 302 and 'q=' not in legacy.location and 'bundle=1' in legacy.location
+    assert guest.get(legacy.location).status_code == 200
 
 
 def test_owner_controls_offer_and_stay_identity_survives_slug_edit(site):
@@ -164,4 +172,6 @@ def test_home_quick_choices_follow_current_owner_content_and_publication(site):
     page = app.test_client().get('/')
     assert page.status_code == 200 and 'Our revised village day' in page.text
     conn.execute("UPDATE services SET published=0 WHERE preset_key IN ('svaneti-ushguli-day-v1','svaneti-koruldi-4x4-v1','svaneti-chalaadi-v1')")
-    assert 'class="wrap mood-section"' not in app.test_client().get('/').text
+    home = app.test_client().get('/').text
+    assert 'Our revised village day' not in home
+    assert home.count('class="trip-card"') == 3

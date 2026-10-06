@@ -1,5 +1,6 @@
 """Stay-and-tour offer: explicit eligibility and immutable request snapshots."""
 import json
+import hashlib
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from zoneinfo import ZoneInfo
@@ -24,14 +25,22 @@ def current_offer(conn, settings):
     except (ValueError, TypeError):
         percent = 0
     terms = settings.get('stay_tour_terms', DEFAULT_TERMS).strip()
+    version = hashlib.sha256(json.dumps([percent, terms, stay['id'] if stay else None]).encode()).hexdigest()
     return dict(enabled=settings.get('stay_tour_enabled', '1') == '1' and bool(stay) and 1 <= percent <= 100 and bool(terms),
-                percent=percent, terms=terms, stay=dict(stay) if stay else None)
+                percent=percent, terms=terms, version=version, stay=dict(stay) if stay else None)
 
 
 def snapshot(value):
     try:
         result = json.loads(value or '{}')
-        return result if isinstance(result, dict) else {}
+        if (not isinstance(result, dict) or type(result.get('percent')) is not int
+                or not 1 <= result['percent'] <= 100 or type(result.get('stay_id')) is not int
+                or result['stay_id'] < 1 or not isinstance(result.get('terms'), str)
+                or not result['terms'].strip()):
+            return {}
+        if datetime.strptime(result.get('check_in', ''), '%Y-%m-%d') >= datetime.strptime(result.get('check_out', ''), '%Y-%m-%d'):
+            return {}
+        return result
     except (ValueError, TypeError):
         return {}
 

@@ -9,7 +9,7 @@
 {% block head %}<link rel="stylesheet" href="/static/catalogue.css"><link rel="stylesheet" href="/static/discovery.css">{% endblock %}
 {% block content %}
 {% if is_preview %}<div class="wrap offering-preview-banner"><div><strong>{{ tr('Staff preview', 'თანამშრომლის წინასწარი ნახვა') }}</strong><span>{{ tr('Saved content. This offering is not published by opening this preview.', 'შენახული შინაარსი. წინასწარი ნახვა შეთავაზებას არ აქვეყნებს.') }}</span></div><a href="/admin/services/{{ svc.id }}/edit">{{ tr('Back to editing', 'რედაქტირებაზე დაბრუნება') }} →</a></div>{% endif %}
-<div class="wrap breadcrumb trip-breadcrumb"><a href="{{ '/admin/services' if is_preview else '/services?kind=' ~ svc.kind ~ '&lang=' ~ lang }}">← {{ tr('Back to offerings', 'შეთავაზებებზე დაბრუნება') if is_preview else tr('All trips & stays', 'ყველა შეთავაზება') }}</a></div>
+<div class="wrap breadcrumb trip-breadcrumb"><a href="{{ '/admin/services' if is_preview else catalogue_url(kind=svc.kind) }}">← {{ tr('Back to offerings', 'შეთავაზებებზე დაბრუნება') if is_preview else tr('All trips & stays', 'ყველა შეთავაზება') }}</a></div>
 <section class="wrap trip-detail">
 <div class="trip-detail-main">
   <header class="trip-detail-heading"><p class="eyebrow">{{ svc.region or tr('Georgia', 'საქართველო') }} · {{ svc.activity or (tr('Guesthouse', 'სასტუმრო') if svc.kind == 'stay' else (tr('Private transfer', 'კერძო ტრანსფერი') if svc.kind == 'taxi' else tr('Guided experience', 'ტური გიდთან ერთად'))) }}</p><h1>{{ display_title }}</h1><p class="trip-detail-intro">{{ translated('description') }}</p></header>

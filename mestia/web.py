@@ -110,6 +110,22 @@ def settings_data():
     return data
 
 
+def catalogue_url(**choices):
+    """Keep the explicitly chosen stay offer through catalogue navigation."""
+    params = dict(lang=g.get('lang', 'en'))
+    if request.args.get('bundle') == '1' or request.form.get('add_stay') == 'on':
+        params['bundle'] = '1'
+    params.update({key: value for key, value in choices.items() if value})
+    return url_for('services', **params)
+
+
+def activity_redirect_url(item):
+    target = service_url(item, g.lang)
+    if request.args.get('bundle') == '1':
+        target += ('&' if '?' in target else '?') + 'bundle=1'
+    return target
+
+
 def activity_contact(item):
     """Build a draft about the chosen activity; opening it never sends it."""
     title = (item.get('title_ka') if g.lang == 'ka' else item['title_en']) or item['title_en']
@@ -236,6 +252,8 @@ def enquiry_input(form, source='website'):
         offer = current_offer(get_db(), settings_data())
         if not quick or kind != 'tour' or len(selected) != 1 or selected[0]['provider_id'] != 1 or not offer['enabled']:
             raise ValueError('This stay-and-tour offer is not available for that request. Please review your selection.')
+        if form.get('stay_offer_version') != offer['version']:
+            raise ValueError('The stay offer has changed since you opened this form. Review the current saving and terms below, then send again.')
         try:
             arrival = datetime.strptime(form.get('bundle_check_in', ''), '%Y-%m-%d').date()
             departure = datetime.strptime(form.get('bundle_check_out', ''), '%Y-%m-%d').date()
@@ -247,7 +265,7 @@ def enquiry_input(form, source='website'):
             raise ValueError('Choose a future stay of at least one night with your tour date between check-in and check-out.')
         bundle = dict(percent=offer['percent'], terms=offer['terms'], stay_id=offer['stay']['id'],
                       check_in=arrival.isoformat(), check_out=departure.isoformat())
-        data['bundle_request'] = json.dumps(bundle)
+        data['bundle_request'] = json.dumps(bundle, ensure_ascii=False)
         data['notes'] = (f"Stay & explore requested: {offer['percent']}% off eligible tour service. Riverside stay {arrival} to {departure} for the same {data['party_size']} guests.\n" + data['notes'])[:4000]
     if kind == 'taxi' and (not data['pickup'].strip() or not data['destination'].strip()):
         raise ValueError('Pickup and destination are required for a taxi.')
@@ -308,7 +326,7 @@ def register_routes(app):
         data = settings_data()
         return dict(settings=data, stay_offer=current_offer(get_db(), data), destination_slides=get_destination_slides(data),
                     lang=g.get('lang', 'en'), user=g.get('user'),
-                    seo_metadata=build_metadata, service_url=service_url,
+                    seo_metadata=build_metadata, service_url=service_url, catalogue_url=catalogue_url,
                     csrf_token=csrf_token, tr=lambda en, ka: ka if g.get('lang') == 'ka' else en)
 
     @app.after_request
@@ -325,7 +343,7 @@ def register_routes(app):
             response.headers['X-Robots-Tag'] = 'noindex, nofollow'
         elif not app.config['INDEXING_ENABLED']:
             response.headers['X-Robots-Tag'] = 'noindex, nofollow'
-        elif request.endpoint == 'services' and any(request.args.get(k) for k in ('region', 'activity', 'duration', 'month', 'q', 'difficulty')):
+        elif request.endpoint == 'services' and any(request.args.get(k) for k in ('region', 'activity', 'duration', 'month', 'difficulty')):
             response.headers['X-Robots-Tag'] = 'noindex, follow'
         if response.mimetype == 'text/html':
             response.headers['Content-Language'] = g.get('lang', 'en')
@@ -388,11 +406,15 @@ def register_routes(app):
 
     @app.get('/')
     def home():
-        return render_template('home.html', services=rows("SELECT * FROM services WHERE published=1 AND archived_at IS NULL ORDER BY CASE WHEN itinerary_en<>'' THEN 0 ELSE 1 END,id DESC LIMIT 6"),
-                               mood_trips=rows("SELECT * FROM services WHERE published=1 AND archived_at IS NULL AND preset_key IN ('svaneti-ushguli-day-v1','svaneti-koruldi-4x4-v1','svaneti-chalaadi-v1') ORDER BY id DESC"))
+        return render_template('home.html', services=rows("SELECT * FROM services WHERE published=1 AND archived_at IS NULL ORDER BY CASE WHEN preset_key IN ('svaneti-ushguli-day-v1','svaneti-koruldi-4x4-v1','svaneti-chalaadi-v1') THEN 0 WHEN itinerary_en<>'' THEN 1 ELSE 2 END,id DESC LIMIT 3"))
 
     @app.get('/services')
     def services():
+        if 'q' in request.args:
+            # Old search links land on the catalogue instead of retaining an
+            # invisible filter. Staff enquiry search is a separate endpoint.
+            return redirect(catalogue_url(**{key: request.args.get(key) for key in
+                            ('kind', 'region', 'activity', 'duration', 'month', 'difficulty')}), code=302)
         kind = request.args.get('kind', '')
         if kind not in {'', 'tour', 'stay', 'taxi'}:
             abort(400, description='Choose a valid service type.')
@@ -400,19 +422,15 @@ def register_routes(app):
         activity = request.args.get('activity', '').strip()
         duration = request.args.get('duration', '')
         month = request.args.get('month', '')
-        search = request.args.get('q', '').strip()
         difficulty = request.args.get('difficulty', '').strip()
-        if len(search) > 100 or len(difficulty) > 200:
-            abort(400, description='Keep search and difficulty filters short.')
+        if len(difficulty) > 200:
+            abort(400, description='Choose a valid effort filter.')
         if len(region) > 150 or len(activity) > 100 or duration not in {'', 'day', 'multi'}:
             abort(400, description='Choose valid catalogue filters.')
         if month and not re.fullmatch(r'(?:[1-9]|1[0-2])', month):
             abort(400, description='Choose a month between 1 and 12.')
         query = 'SELECT * FROM services WHERE published=1 AND archived_at IS NULL'
         params = []
-        if search:
-            query += " AND (instr(lower(title_en),lower(?))>0 OR instr(lower(description_en),lower(?))>0 OR instr(title_ka,?)>0)"
-            params += [search, search, search]
         if difficulty:
             query += ' AND difficulty=?'
             params.append(difficulty)
@@ -429,11 +447,13 @@ def register_routes(app):
             query += " AND instr(',' || season_months || ',',?)>0"
             params.append(',' + month + ',')
         data = rows(query + " ORDER BY CASE WHEN itinerary_en<>'' THEN 0 ELSE 1 END,id DESC", params)
-        regions = [record['region'] for record in rows("SELECT DISTINCT region FROM services WHERE published=1 AND archived_at IS NULL AND region<>'' ORDER BY region")]
-        activities = [record['activity'] for record in rows("SELECT DISTINCT activity FROM services WHERE published=1 AND archived_at IS NULL AND activity<>'' ORDER BY activity")]
+        available = rows('SELECT region,activity,difficulty FROM services WHERE published=1 AND archived_at IS NULL' +
+                         (' AND kind=?' if kind else ''), (kind,) if kind else ())
+        choices = lambda field: sorted({record[field] for record in available if record[field]})
+        regions, activities = choices('region'), choices('activity')
         return render_template('services.html', services=data, kind=kind,
-                               search_query=search, selected_difficulty=difficulty,
-                               difficulty_choices=[r['difficulty'] for r in rows("SELECT DISTINCT difficulty FROM services WHERE published=1 AND archived_at IS NULL AND difficulty<>'' ORDER BY difficulty")],
+                               selected_difficulty=difficulty,
+                               difficulty_choices=choices('difficulty'),
                                selected_region=region, selected_activity=activity,
                                selected_duration=duration, selected_month=month,
                                regions=regions, activities=activities,
@@ -445,7 +465,7 @@ def register_routes(app):
         item = row('SELECT * FROM services WHERE id=? AND published=1 AND archived_at IS NULL', (service_id,))
         if not item:
             abort(404)
-        return redirect(service_url(item, g.lang), code=301)
+        return redirect(activity_redirect_url(item), code=301)
 
     @app.get('/services/<int:service_id>/<slug>')
     def service_detail(service_id, slug):
@@ -453,7 +473,7 @@ def register_routes(app):
         if not item:
             abort(404)
         if slug != item['slug']:
-            return redirect(service_url(item, g.lang), code=301)
+            return redirect(activity_redirect_url(item), code=301)
         return render_template('service.html', service=item, **activity_contact(item))
 
     @app.get('/faq')
@@ -638,6 +658,12 @@ def quote_input(e):
         if kind not in {'tour', 'stay', 'taxi'}:
             raise ValueError('Choose tour, stay or taxi for each quote item.')
         service_id = field('item_service_id', i)
+        if service_id:
+            linked = row('SELECT kind FROM services WHERE id=? AND archived_at IS NULL', (integer(service_id),))
+            if not linked:
+                raise ValueError('Choose an existing catalogue item for the quote.')
+            # Match the domain layer: the linked service defines the item type.
+            kind = linked['kind']
         if e.get('timing_pending') and (not field('item_start', i).strip() or not field('item_end', i).strip()):
             raise ValueError('Agree the schedule with the guest, then enter a start and end for each quote item.')
         index_map[i] = len(items)
