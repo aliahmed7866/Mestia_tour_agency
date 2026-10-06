@@ -16,3 +16,7 @@
 .quick-enquiry button:disabled{opacity:.65;cursor:not-allowed;transform:none}.catalogue-filter-grid label{display:flex;flex-direction:column;gap:7px}
 
 .stay-offer{grid-template-columns:minmax(0,1fr);padding:28px}.stay-offer h2{font-size:clamp(28px,3.2vw,36px)}
+
+/* Shorter browsing pages with one prominent action per card. */
+.home-choices{display:flex;flex-wrap:wrap;gap:12px}.home-choices .button-outline{background:transparent;color:var(--forest);border:1px solid var(--forest)}.home-choices .button-outline:hover{background:var(--sage)}.trip-card-footer{padding-bottom:10px}.trip-card-facts{margin-block:12px}.trip-story{margin:12px 0 24px}.discovery-intro{padding-block:30px}.discovery-intro h1{font-size:clamp(34px,4vw,48px)}
+@media(max-width:600px){.home-choices .button{flex:1 1 auto;text-align:center;justify-content:center}.home-choices .button:first-child{flex-basis:100%}.discovery-hero{gap:18px;padding-bottom:28px}.trip-card-body{padding:20px}.trip-card h2,.trip-card h3{font-size:25px}.trip-card-facts{font-size:13px}.discovery-intro{padding-block:22px}.discovery-intro .eyebrow{display:none}}

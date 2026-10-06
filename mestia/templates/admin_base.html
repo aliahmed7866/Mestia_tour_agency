@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
   <title>{% block title %}Operations{% endblock %} · {{ settings.business_name }}</title>
-  <link rel="stylesheet" href="/static/style.css"><link rel="stylesheet" href="/static/admin.css">
+  <link rel="stylesheet" href="/static/style.css"><link rel="stylesheet" href="/static/admin.css?v=20261006-simple">
   <script src="/static/admin.js" defer></script>
   {% block head %}{% endblock %}
 </head>
@@ -15,8 +15,8 @@
   <div class="admin-account"><a href="/" target="_blank" rel="noopener">View website ↗</a><span>{{ user.email }}</span><form method="post" action="/admin/logout"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="admin-link" type="submit">Sign out</button></form></div>
 </header>
 <nav class="admin-nav" aria-label="Operations">
-  {% for path,label in [('/admin','Overview'),('/admin/manual','New enquiry'),('/admin/resources','Availability')] %}<a href="{{ path }}" {% if request.path == path %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
-  {% if user.role == 'owner' %}{% for path,label in [('/admin/services','Services'),('/admin/providers','Providers'),('/admin/settings','Settings')] %}<a href="{{ path }}" {% if request.path == path %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}{% endif %}
+  {% for path,label in [('/admin','Requests'),('/admin/resources','Availability')] %}<a href="{{ path }}" {% if request.path == path %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+  {% if user.role == 'owner' %}{% for path,label in [('/admin/services','Catalogue'),('/admin/providers','Providers'),('/admin/settings','Settings')] %}<a href="{{ path }}" {% if request.path == path %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}{% endif %}
 </nav>
 <main id="main" class="admin-main">
   {% for category,message in get_flashed_messages(with_categories=true) %}<div class="admin-alert {{ category }}" role="status">{{ message }}</div>{% endfor %}

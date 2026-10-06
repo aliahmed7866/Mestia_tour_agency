@@ -66,3 +66,13 @@ offer terms. The suite continues to cover inventory conflicts, quote/payment
 boundaries, CSRF, role restrictions, backup restoration and SEO. Phone-browser
 visual verification remains outstanding; no new screenshot verification is
 claimed.
+
+Further simplification on 6 October 2026: three direct homepage service choices,
+shorter cards, a smaller main menu, and optional trip background text. Itinerary,
+practical details, the stay offer, FAQ and direct booking requests remain.
+Admin filters and exports use native disclosure controls; active filters reopen
+automatically, reminders remain visible when present, and mobile request rows
+show all three independent statuses without a wide table. Existing 215 tests
+passed. Rendered-page/DOM checks covered navigation, request submission, retained
+activity, offer controls and admin disclosures; CSS syntax checks passed. Actual
+phone rendering is still unverified in this environment.

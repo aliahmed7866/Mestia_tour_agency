@@ -4,3 +4,8 @@
 @media(prefers-reduced-motion:reduce){.admin-body *{scroll-behavior:auto!important;transition:none!important}}
 
 .admin-body [hidden]{display:none!important}.admin-payment-summary{display:flex;flex-wrap:wrap;gap:.5rem 1rem;background:#f2f5ec;padding:.8rem;border-radius:6px;font-size:.82rem;margin-bottom:.9rem}.admin-payment-summary strong{width:100%}
+
+.admin-optional{margin-bottom:1rem}.admin-optional[open]{border-bottom:1px solid #dce2d7}.admin-columns>details.admin-panel{align-self:start}.admin-columns:has(>details:only-child){grid-template-columns:1fr}
+
+/* Keep each guest and all three independent statuses readable on a phone. */
+@media(max-width:600px){.admin-table-wrap:has(.request-list){border:0;overflow:visible}.admin-table-wrap .request-list{min-width:0;display:block}.request-list thead{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%)}.request-list tbody{display:block}.request-list tr{display:block;border:1px solid #dce2d7;border-radius:8px;margin-bottom:12px;padding:10px}.admin-body .request-list td{display:block;padding:6px 8px;border:0;overflow-wrap:anywhere}.request-list td[data-label]::before{content:attr(data-label);display:block;font-size:12px;color:#667469;margin-bottom:3px}.request-list td:first-child a{display:block;min-height:44px}.request-list td:nth-child(n+4){display:inline-block;width:32%;vertical-align:top}.request-list .admin-badge{white-space:normal}}

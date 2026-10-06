@@ -18,13 +18,12 @@
   <div class="trip-card-body">
     <p class="trip-category">{{ svc.region or tr('Svaneti & beyond', 'სვანეთი და სხვა რეგიონები') }} <span aria-hidden="true">/</span> {{ tr('Stay', 'განთავსება') if svc.kind == 'stay' else (tr('Transfer', 'ტრანსფერი') if svc.kind == 'taxi' else tr('Explore', 'ტური')) }}</p>
     <{{ heading }}><a href="{{ service_url(svc, lang) }}{% if request.args.get('bundle') == '1' %}{{ '&' if lang == 'ka' else '?' }}bundle=1{% endif %}">{{ title }}</a></{{ heading }}>
-    <p class="trip-card-intro">{{ ((svc.description_ka if lang == 'ka' else svc.description_en) or svc.description_en or '')|truncate(155) }}</p>
-    {% if svc.base_location or svc.difficulty or svc.season_months %}<dl class="trip-card-facts">
-      {% if svc.base_location %}<div><dt>{{ tr('From', 'დასაწყისი') }}</dt><dd>{{ svc.base_location }}</dd></div>{% endif %}
+    <p class="trip-card-intro">{{ ((svc.description_ka if lang == 'ka' else svc.description_en) or svc.description_en or '')|truncate(110) }}</p>
+    {% if svc.difficulty or svc.season_months %}<dl class="trip-card-facts">
       {% if svc.difficulty %}<div><dt>{{ tr('Pace', 'სირთულე') }}</dt><dd>{{ svc.difficulty|truncate(72) }}</dd></div>{% endif %}
       {% if svc.season_months %}<div><dt>{{ tr('Season', 'სეზონი') }}</dt><dd>{{ months(svc) }}</dd></div>{% endif %}
     </dl>{% endif %}
-    <div class="trip-card-footer"><span class="trip-price">{% if svc.price_minor is not none %}<strong>{{ '%.2f'|format(svc.price_minor/100) }} {{ svc.currency }}</strong>{% if svc.price_basis %}<small>{{ svc.price_basis }}</small>{% endif %}{% else %}{{ tr('Price on request', 'ფასი მოთხოვნით') }}{% endif %}</span><a class="trip-view" href="{{ service_url(svc, lang) }}{% if request.args.get('bundle') == '1' %}{{ '&' if lang == 'ka' else '?' }}bundle=1{% endif %}">{{ tr('View stay', 'ნახეთ განთავსება') if svc.kind == 'stay' else (tr('View route', 'ნახეთ მარშრუტი') if svc.kind == 'taxi' else tr('View trip', 'ნახეთ ტური')) }} <span aria-hidden="true">↗</span></a></div>
+    <div class="trip-card-footer"><span class="trip-price">{% if svc.price_minor is not none %}<strong>{{ '%.2f'|format(svc.price_minor/100) }} {{ svc.currency }}</strong>{% if svc.price_basis %}<small>{{ svc.price_basis }}</small>{% endif %}{% else %}{{ tr('Price on request', 'ფასი მოთხოვნით') }}{% endif %}</span></div>
     <a class="trip-request" href="/request?service_id={{ svc.id }}&amp;kind={{ svc.kind }}&amp;lang={{ lang }}{% if request.args.get('bundle') == '1' %}&amp;bundle=1{% endif %}" aria-label="{{ tr('Request booking for', 'დაჯავშნის მოთხოვნა:') }} {{ title }}">{{ tr('Request booking', 'დაჯავშნის მოთხოვნა') }} <span aria-hidden="true">→</span></a>
   </div>
 </article>
