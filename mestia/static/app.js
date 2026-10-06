@@ -141,3 +141,41 @@ document.querySelectorAll("[data-activity-message]").forEach((draft) => {
     if (copied) button.focus();
   });
 });
+
+// Date checks complement the server validation; never invent travel dates.
+if (requestForm) {
+  const field = name => requestForm.elements.namedItem(name);
+  const validateDates = () => {
+    for (const [startName, endName] of [['check_in','check_out'], ['bundle_check_in','bundle_check_out']]) {
+      const start = field(startName), end = field(endName);
+      if (!start || !end) continue;
+      end.setCustomValidity(!end.disabled && start.value && end.value && end.value <= start.value ? requestForm.dataset.dateError : '');
+    }
+    const tour = field('request_date'), arrival = field('bundle_check_in'), departure = field('bundle_check_out');
+    if (tour) tour.setCustomValidity(stayChoice?.checked && arrival?.value && departure?.value && tour.value &&
+      (tour.value < arrival.value || tour.value > departure.value) ? requestForm.dataset.bundleError : '');
+  };
+  requestForm.addEventListener('input', validateDates);
+  requestForm.addEventListener('change', validateDates);
+  validateDates();
+  // Reveal invalid optional fields before the browser moves focus to them.
+  requestForm.addEventListener('invalid', event => {
+    let parent = event.target.parentElement;
+    while (parent && parent !== requestForm) {
+      if (parent.tagName === 'DETAILS') parent.open = true;
+      parent = parent.parentElement;
+    }
+  }, true);
+  const send = requestForm.querySelector('button[type=submit]');
+  const label = send?.textContent;
+  requestForm.addEventListener('submit', event => {
+    if (requestForm.dataset.sendingNow) { event.preventDefault(); return; }
+    requestForm.dataset.sendingNow = 'true';
+    if (send) { send.disabled = true; send.textContent = requestForm.dataset.sending; }
+  });
+  window.addEventListener('pageshow', () => {
+    if (!requestForm.dataset.sendingNow) return;
+    delete requestForm.dataset.sendingNow;
+    if (send) { send.disabled = false; send.textContent = label; }
+  });
+}

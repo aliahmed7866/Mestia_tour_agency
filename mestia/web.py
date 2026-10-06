@@ -325,7 +325,7 @@ def register_routes(app):
     def context():
         data = settings_data()
         return dict(settings=data, stay_offer=current_offer(get_db(), data), destination_slides=get_destination_slides(data),
-                    lang=g.get('lang', 'en'), user=g.get('user'),
+                    lang=g.get('lang', 'en'), user=g.get('user'), today_local=datetime.now(TBILISI).date().isoformat(),
                     seo_metadata=build_metadata, service_url=service_url, catalogue_url=catalogue_url,
                     csrf_token=csrf_token, tr=lambda en, ka: ka if g.get('lang') == 'ka' else en)
 

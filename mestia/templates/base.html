@@ -15,9 +15,9 @@
   {% if seo.structured_data %}<script type="application/ld+json" nonce="{{ g.csp_nonce }}">{{ seo.structured_data|tojson }}</script>{% endif %}
   <link rel="icon" href="/static/mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/style.css">
-  <script src="/static/app.js?v=20261006-simple" defer></script>
+  <script src="/static/app.js?v=20261006-auto" defer></script>
   {% block head %}{% endblock %}
-  {% if not request.path.startswith('/admin') %}<link rel="stylesheet" href="/static/adventure.css?v=20261006-simple">{% endif %}
+  {% if not request.path.startswith('/admin') %}<link rel="stylesheet" href="/static/adventure.css?v=20261006-auto">{% endif %}
 </head>
 <body>
   <a class="skip-link" href="#main">{{ tr('Skip to content', 'შინაარსზე გადასვლა') }}</a>

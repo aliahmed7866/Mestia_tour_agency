@@ -76,3 +76,17 @@ show all three independent statuses without a wide table. Existing 215 tests
 passed. Rendered-page/DOM checks covered navigation, request submission, retained
 activity, offer controls and admin disclosures; CSS syntax checks passed. Actual
 phone rendering is still unverified in this environment.
+
+Automation refinement on 6 October 2026: quote rows fill catalogue title, type,
+GEL unit price and inclusions, preserve manually edited fields, and show price
+basis. Unknown/non-GEL prices remain blank for review. Additional blank rows
+are revealed on demand; the full form remains available without JavaScript.
+Resource-time overrides now start blank, using the existing server fallback to
+the linked quote item's agreed times. Taxi dispatch is shown only for relevant
+requests/items or existing assignments. Guest date controls use the Tbilisi
+calendar day, validate stay/tour dates, reveal invalid optional fields and block
+repeat submission taps with Back-navigation recovery. No messages, confirmations,
+price negotiations or deposit verification are automated. All 215 tests passed;
+jsdom interaction checks covered autofill including a four-digit price, retained
+manual prices, cloned rows, date conflicts, hidden validation and submission
+recovery. Phone visual verification remains outstanding.
