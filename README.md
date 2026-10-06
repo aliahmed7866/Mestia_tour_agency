@@ -97,3 +97,9 @@ Guests can add Riverside dates to a tour request for a 10% tour-service saving.
 The owner controls the rate, terms and visibility in Settings; eligible quote
 items are checked and discounted on the server. Rooms and extras are excluded.
 Read the [source-informed UX review and offer workflow](docs/ui-research.md).
+
+## GitHub Pages demo
+
+A separate browser-only sandbox demonstrates the customer and admin workflows
+with sample prices and local data. It cannot receive real bookings. See
+[the Pages demo guide](docs/github-pages-demo.md) for publishing and local preview.
