@@ -47,8 +47,12 @@ sandbox; start another sample request for that scenario.
 
 ## Validation
 
-`node --test pages-demo/model.test.cjs` checks confirmation gates, deposits,
+`node --test pages-demo/*.test.cjs` checks confirmation gates, deposits,
 conflicts, cancellation release, discount snapshots, expiry, driver acceptance
-and invalid inputs. DOM checks exercised every main route, a complete guest to
+and invalid inputs. Catalogue regressions cover URL-backed filters, browser
+history restoration, empty-result recovery and escaping. Filter selections
+survive opening a trip and returning with Back, or reloading the filtered URL.
+Months use readable names; clearing filters keeps the selected category. DOM checks exercised every main route, a complete guest to
 admin confirmation and archived listings; CSS and JavaScript syntax checks
 passed. Real browser visual verification remains outstanding in this environment.
+

@@ -24,7 +24,7 @@ jobs:
           python-version: '3.13'
       - run: pip install -r requirements.txt
       - run: python scripts/build-pages-demo.py
-      - run: node --test pages-demo/model.test.cjs
+      - run: node --test pages-demo/*.test.cjs
       - uses: actions/configure-pages@v5
         with:
           enablement: true
@@ -33,3 +33,4 @@ jobs:
           path: _pages_site
       - id: deployment
         uses: actions/deploy-pages@v4
+

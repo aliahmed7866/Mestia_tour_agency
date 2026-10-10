@@ -197,6 +197,81 @@ def test_guest_and_dispatcher_cannot_write_owner_configuration_or_payments(app, 
     assert db.execute('SELECT count(*) FROM payments WHERE quote_id=?', (q['id'],)).fetchone()[0] == 0
 
 
+@pytest.mark.parametrize('target', ['/admin?status=new&q=Alex%20Demo', '/admin?q=why?', '/admin/services?status=draft'])
+@pytest.mark.parametrize('require_totp', [False, True])
+def test_sign_in_resumes_requested_admin_page_and_filters(app, target, require_totp):
+    from urllib.parse import parse_qs, urlsplit
+
+    app.config['REQUIRE_TOTP'] = require_totp
+    client = app.test_client()
+    redirect_to_login = client.get(target)
+    assert parse_qs(urlsplit(redirect_to_login.location).query)['next'] == [target]
+    page = client.get(redirect_to_login.location)
+    assert Controls(page.text).value('next') == target
+    response = client.post('/admin/login', data={
+        'csrf_token': Controls(page.text).value('csrf_token'),
+        'email': 'owner@example.test', 'password': PASSWORD, 'next': target,
+        'otp': totp_code(TOTP_SECRET) if require_totp else '',
+    })
+    assert response.location == target
+    assert client.get(response.location).status_code == 200
+
+
+def test_failed_sign_in_keeps_escaped_email_and_destination_but_no_secrets(app):
+    app.config['REQUIRE_TOTP'] = False
+    client = app.test_client()
+    page = client.get('/admin/login?next=/admin/services')
+    email = '\"><script>alert(1)</script>@example.test'
+    response = client.post('/admin/login', data={
+        'csrf_token': Controls(page.text).value('csrf_token'), 'email': email,
+        'password': 'incorrect-password-not-to-echo', 'otp': '654321', 'next': '/admin/services',
+    })
+    assert response.status_code == 401
+    controls = Controls(response.text)
+    assert controls.value('email') == email
+    assert controls.value('next') == '/admin/services'
+    assert '<script>alert(1)</script>' not in response.text
+    assert 'incorrect-password-not-to-echo' not in response.text
+    assert '654321' not in response.text
+    assert client.get('/admin/services').status_code == 302
+
+
+@pytest.mark.parametrize('target', [
+    'https://attacker.example/admin', '//attacker.example/admin',
+    'https://localhost/admin', 'javascript:alert(1)', '/administrator',
+    '/admin/login', '/admin/login?next=/admin/settings', '/admin/logout',
+    '/admin/not-a-route', '/admin/enquiries/1/confirm', '/services',
+    '/admin/../services', '/admin//settings', '/admin/%2f%2fattacker.example',
+    '/%2f%2fattacker.example/admin', '/admin/%5csettings',
+    '/admin/%252fsettings', '/admin\\settings', '\n/admin/settings',
+    '/admin/settings%0a', '/admin/settings?x=%0d%0aLocation:evil',
+])
+def test_sign_in_rejects_unsafe_or_non_get_return_destinations(app, target):
+    app.config['REQUIRE_TOTP'] = False
+    client = app.test_client()
+    page = client.get('/admin/login', query_string={'next': target})
+    assert Controls(page.text).value('next') == '/admin'
+    # Revalidate the POST itself: a hidden field can be changed by a caller.
+    response = client.post('/admin/login', data={
+        'csrf_token': Controls(page.text).value('csrf_token'),
+        'email': 'owner@example.test', 'password': PASSWORD, 'next': target,
+    })
+    assert response.status_code == 302
+    assert response.location == '/admin'
+
+
+def test_sign_in_return_does_not_bypass_owner_permissions(app):
+    app.config['REQUIRE_TOTP'] = False
+    client = app.test_client()
+    page = client.get('/admin/login?next=/admin/settings')
+    response = client.post('/admin/login', data={
+        'csrf_token': Controls(page.text).value('csrf_token'),
+        'email': 'dispatcher@example.test', 'password': PASSWORD, 'next': '/admin/settings',
+    })
+    assert response.location == '/admin/settings'
+    assert client.get(response.location).status_code == 403
+
+
 def test_public_enquiry_quote_deposit_confirmation_and_guest_cancellation_request(app, owner, db):
     guest, private_url, original_data = public_request(app)
     identifier = enquiry_id(db)
@@ -474,3 +549,4 @@ def test_destination_photos_can_be_replaced_preserved_and_reset(app, owner, db):
     assert page.count('Photo placeholder · Illustration') == 3
     assert '/static/destinations/tower-village.svg' in page
     assert photo not in page
+
