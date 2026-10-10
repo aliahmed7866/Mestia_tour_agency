@@ -1,5 +1,15 @@
 # Mestia Travel
 
+This repository includes three versions:
+
+| Version | Source | Purpose |
+| --- | --- | --- |
+| Flask / Termux app | `mestia/` | Python server with its own SQLite database; installation instructions below. |
+| Hosted Sites app | [`sites-app/`](sites-app/README.md) | Current private hosted app, with combined requests, shared tour departures and capacity management. |
+| GitHub Pages demo | [`pages-demo/`](docs/github-pages-demo.md) | Public browser-only sandbox with fictional data and inventory controls. |
+
+The hosted app and Flask app use separate databases. Updating source here does not migrate bookings between them. The Pages demo stores only browser-local sample data.
+
 A mobile-friendly tourism site and owner workspace for tours, guesthouse stays and taxi enquiries in Mestia. Built with Python, Flask, SQLite and Waitress so it can run directly in Termux without Docker, Node.js, root access or a database server.
 
 This is an initial pilot implementation. It includes the services from the supplied business card and Riverside Svaneti Guest House, with its Instagram and the card's exact WhatsApp QR destination. Add actual prices, photos, resources and policies before inviting guests. “Mestia Travel” is a provisional name. No real bookings, reviews, drivers or availability are supplied.
@@ -60,7 +70,7 @@ The same setup and start scripts work on Linux with Python 3.11+ and `venv` inst
 - Separate manual payment records, change/cancellation requests, reminders and audit history.
 - Individual staff accounts with passwords and optional authenticator codes, server-side permissions, CSRF protection, request throttling and a form spam trap.
 
-Opening WhatsApp does not send a message or confirm a booking. A full international WhatsApp number in settings enables editable message prefill: activity links include the title and page link, and guest status links include the request reference. With the supplied QR link, activity pages instead offer an editable message to copy and paste into the chat; guests using their status page must include the reference manually. Staff handle chats, verify contact, record payments and complete reminder tasks manually. Tours initially reserve guides exclusively for private trips; a shared-seat departure workflow is later work. There is no WhatsApp inbox sync, automatic messaging, card checkout or accommodation-channel sync. Georgian copy needs a native-speaker review. Do a supervised pilot with your real inventory before launch.
+Opening WhatsApp does not send a message or confirm a booking. A full international WhatsApp number in settings enables editable message prefill: activity links include the title and page link, and guest status links include the request reference. With the supplied QR link, activity pages instead offer an editable message to copy and paste into the chat; guests using their status page must include the reference manually. Staff handle chats, verify contact, record payments and complete reminder tasks manually. The Flask / Termux version reserves guides exclusively for private trips; shared-seat departures are available in the hosted app and Pages demo. There is no WhatsApp inbox sync, automatic messaging, card checkout or accommodation-channel sync. Georgian copy needs a native-speaker review. Do a supervised pilot with your real inventory before launch.
 
 ## Researched offering presets
 
@@ -103,3 +113,4 @@ Read the [source-informed UX review and offer workflow](docs/ui-research.md).
 A separate browser-only sandbox demonstrates the customer and admin workflows
 with sample prices and local data. It cannot receive real bookings. See
 [the Pages demo guide](docs/github-pages-demo.md) for publishing and local preview.
+

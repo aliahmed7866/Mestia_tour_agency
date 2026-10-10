@@ -1,7 +1,7 @@
 # GitHub Pages interactive sandbox
 
 The Pages site is a public, English-language demonstration, separate from the
-production Flask/SQLite app. It uses fictional prices and resources. Requests,
+Flask/SQLite and hosted Sites apps. It uses fictional prices and resources. Requests,
 quotes and edits are stored only in the current browser. Never enter real guest
 information. Reset demo removes the sandbox state.
 
@@ -35,10 +35,15 @@ request review; quote creation, expiry and guest acceptance; sample resource
 conflicts and date blocks; deposit/refund recording and verification; driver
 acceptance; confirmation, cancellation, completion and no-show outcomes; guest
 messages; provider approval; reminders; business settings; history and CSV export.
+**Admin → Inventory** adds simultaneous-tour limits, dated shared departures,
+assigned guides and optional vehicles, confirmed/free places, copying dates and
+closing or cancelling departures. Separate bookings share a departure's seats;
+requests and quotes do not reserve scheduled seats. Confirmation rechecks capacity.
 
-The sandbox models whole-date, single-resource-per-item conflicts. The live app's
-exact-time inventory, room occupancy, seat capacity, multiple resources, travel
-buffers and secure permissions remain server functions. The feature guide in
+Scheduled departures use start/end times in Georgia (UTC+4). Other sandbox quote
+rows retain whole-date, single-resource-per-item conflicts and expiring sample
+resource holds. The hosted app uses transactional seat allocation and 15-minute
+guide/vehicle slots with travel buffers; these remain server functions. The feature guide in
 the demo explains these limitations, along with authentication, private links,
 backups, media validation and notifications. Browser history and local data are
 editable and are not secure audit records. No messages, payments or reservations
@@ -48,11 +53,11 @@ sandbox; start another sample request for that scenario.
 ## Validation
 
 `node --test pages-demo/*.test.cjs` checks confirmation gates, deposits,
-conflicts, cancellation release, discount snapshots, expiry, driver acceptance
-and invalid inputs. Catalogue regressions cover URL-backed filters, browser
-history restoration, empty-result recovery and escaping. Filter selections
-survive opening a trip and returning with Back, or reloading the filtered URL.
-Months use readable names; clearing filters keeps the selected category. DOM checks exercised every main route, a complete guest to
-admin confirmation and archived listings; CSS and JavaScript syntax checks
-passed. Real browser visual verification remains outstanding in this environment.
-
+conflicts, cancellation release, discount snapshots, expiry, driver acceptance,
+scheduled seats and operating limits. Catalogue regressions cover URL-backed
+filters, browser history restoration, empty-result recovery and escaping.
+Filter selections survive opening a trip and returning with Back, or reloading
+the filtered URL. Months use readable names; clearing filters keeps the selected
+category. The hosted app has its own type checks,
+build and SQL workflow tests in `sites-app/`, enforced by the **Hosted app checks**
+workflow. Real browser visual verification remains outstanding in this environment.

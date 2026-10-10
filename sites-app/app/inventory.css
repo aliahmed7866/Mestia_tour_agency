@@ -1,0 +1,60 @@
+.inventory-limit { margin-bottom: 22px; }
+.inventory-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+.inventory-overview > div { display: grid; gap: 7px; padding: 17px 20px; background: #fffefa; border: 1px solid var(--adm-line); border-radius: 8px; }
+.inventory-overview strong { font-size: 26px; font-weight: 600; line-height: 1.1; }
+.inventory-overview span { font-size: 12px; line-height: 1.5; color: var(--adm-muted); }
+.inventory-limit > .admin-panel-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 340px); gap: 30px; align-items: start; }
+.inventory-limit-copy h2 { margin-top: 1px; }
+.inventory-limit-copy p { margin: 8px 0 11px; max-width: 580px; font-size: 13px; }
+.inventory-limit-form { display: grid; grid-template-columns: minmax(120px, 1fr) auto; align-items: end; gap: 10px; }
+.inventory-limit-form input { max-width: 170px; }
+.inventory-limit-form > p { grid-column: 1 / -1; margin: 0; }
+.inventory-limit-hint { padding-top: 2px; }
+.inventory-form-message { color: #803c2f !important; font-size: 12px; }
+.inventory-setup { align-items: center; }
+.inventory-list-filters { display: grid; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--adm-line); }
+.inventory-list-filters .admin-field { gap: 5px; font-size: 12px; }
+.inventory-list-filters input, .inventory-list-filters select { padding: 8px 10px; }
+.inventory-text-button { background: transparent; border: 0; min-height: 44px !important; padding: 0; justify-self: start; color: var(--adm-forest); font-size: 12px !important; text-decoration: underline; text-underline-offset: 3px; }
+.inventory-listitem + .inventory-listitem { border-top-color: #eeeee5; border-top-left-radius: 0; border-top-right-radius: 0; }
+.inventory-listitem.active { border-top-color: #dce3d3; border-top-left-radius: 7px; border-top-right-radius: 7px; }
+.inventory-listitem .admin-listitem-top strong { font-size: 14px; line-height: 1.45; }
+.inventory-list-date { display: block; font-size: 13px; font-weight: 600; margin-top: 8px; }
+.inventory-listitem small { line-height: 1.6; }
+.inventory-list-capacity { display: block; font-size: 12px; color: var(--adm-forest); margin-top: 9px; font-weight: 600; }
+.inventory-seats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 19px 0 10px; }
+.inventory-seats > div { border-radius: 7px; padding: 15px 12px; background: #f1f4ea; }
+.inventory-seats > div:last-child { background: #f5f3eb; }
+.inventory-seats strong { display: block; font-size: 26px; line-height: 1.2; font-weight: 600; }
+.inventory-seats span { display: block; color: var(--adm-muted); font-size: 11px; margin-top: 5px; }
+.inventory-requested { margin: 12px 0 21px; }
+.inventory-fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 17px; min-width: 0; }
+.inventory-fieldset:disabled input, .inventory-fieldset:disabled select { color: #5e6c60; background: #f5f5ee; opacity: 1; cursor: default; }
+.inventory-save { display: flex; align-items: center; gap: 14px; padding-top: 3px; }
+.inventory-save .admin-smalltext { max-width: 250px; }
+.inventory-cancel-help { margin: -4px 0 0; }
+.inventory-local-error { margin-bottom: 0; }
+.inventory-empty-note { display: flex; gap: 10px; max-width: 370px; margin: 25px auto 0; text-align: left; padding: 15px; border-radius: 7px; background: #f0f3e9; color: var(--adm-muted); font-size: 12px; line-height: 1.6; }
+.inventory-empty-note svg { flex-shrink: 0; width: 18px; height: 18px; margin: 2px 0 0; }
+@media (max-width: 940px) {
+  .inventory-limit > .admin-panel-inner { grid-template-columns: 1fr; gap: 18px; }
+  .inventory-limit-form { max-width: 380px; }
+}
+@media (max-width: 620px) {
+  .inventory-overview { gap: 7px; }
+  .inventory-overview > div { padding: 14px 10px; }
+  .inventory-overview strong { font-size: 24px; }
+  .inventory-overview span { font-size: 11px; }
+  .inventory-limit { margin-bottom: 17px; }
+  .inventory-limit-copy h2 { font-size: 17px; }
+  .inventory-limit-form { width: 100%; max-width: none; }
+  .inventory-setup { flex-wrap: wrap; }
+  .inventory-setup > div { flex: 1; }
+  .inventory-setup .admin-btn { margin-left: 28px; }
+  .inventory-seats { gap: 7px; }
+  .inventory-seats > div { padding: 13px 9px; }
+  .inventory-seats strong { font-size: 24px; }
+  .inventory-save { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .inventory-save .admin-btn { width: 100%; }
+  .inventory-save .admin-smalltext { max-width: none; }
+}
