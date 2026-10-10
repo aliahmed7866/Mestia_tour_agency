@@ -11,9 +11,11 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import unquote, urlencode, urlsplit
 from zoneinfo import ZoneInfo
 from xml.etree import ElementTree as ET
+
+from werkzeug.exceptions import HTTPException
 
 from flask import (abort, current_app, flash, g, make_response, redirect,
                    render_template, request, send_from_directory, session, url_for)
@@ -147,12 +149,35 @@ def audit(action, kind, identifier, details=''):
                      (g.user['id'] if g.get('user') else None, action, kind, identifier, json.dumps({'note': details}), now_iso()))
 
 
+def admin_return_target(value):
+    """Return only an existing local admin GET route, never an arbitrary URL."""
+    if not isinstance(value, str) or not value or len(value) > 2048:
+        return '/admin'
+    # Reject browser/parser ambiguities before URL parsing. Admin route paths
+    # need no escaping, dot segments or backslashes; query values may be encoded.
+    if any(ord(c) < 32 or ord(c) == 127 for c in unquote(value)) or '\\' in unquote(value):
+        return '/admin'
+    try:
+        parts = urlsplit(value)
+        if (parts.scheme or parts.netloc or
+                not re.fullmatch(r'/admin(?:/[A-Za-z0-9_-]+)*', parts.path)):
+            return '/admin'
+        endpoint, _ = current_app.url_map.bind('').match(parts.path, method='GET')
+        if endpoint in {'login', 'logout'}:
+            return '/admin'
+    except (ValueError, HTTPException):
+        return '/admin'
+    return value
+
+
 def staff(owner=False):
     def decorate(func):
         @wraps(func)
         def wrapped(*args, **kwargs):
             if not g.get('user'):
-                return redirect('/admin/login')
+                # A GET can be resumed after sign-in. Never replay a submitted action.
+                target = admin_return_target(request.full_path if request.query_string else request.path) if request.method == 'GET' else '/admin'
+                return redirect(url_for('login', next=target) if target != '/admin' else url_for('login'))
             if owner and g.user['role'] != 'owner':
                 abort(403)
             return func(*args, **kwargs)
@@ -593,6 +618,7 @@ def register_routes(app):
     @app.route('/admin/login', methods=['GET', 'POST'])
     def login():
         error = None
+        target = admin_return_target(request.form.get('next') if request.method == 'POST' else request.args.get('next'))
         if request.method == 'POST':
             email = request.form.get('email', '').strip().lower()[:254]
             allowed = rate_limit(get_db(), 'login-ip:' + (request.remote_addr or ''), 30, 900, app.secret_key)
@@ -615,9 +641,9 @@ def register_routes(app):
                 session.permanent = True
                 g.user = user
                 audit('login', 'user', user['id'])
-                return redirect('/admin')
+                return redirect(target)
             error = 'Email, password or authenticator code is incorrect.' if app.config['REQUIRE_TOTP'] else 'Email or password is incorrect.'
-        return render_template('login.html', error=error), (401 if error else 200)
+        return render_template('login.html', error=error, next_target=target), (401 if error else 200)
 
     @app.post('/admin/logout')
     @staff()
@@ -1161,3 +1187,4 @@ def register_admin(app):
         response.headers['Content-Disposition']=f'attachment; filename="mestia-{kind if kind in ("payments","bookings") else "bookings"}.csv"'
         audit('exported',kind,None)
         return response
+
