@@ -197,11 +197,12 @@ def test_guest_and_dispatcher_cannot_write_owner_configuration_or_payments(app, 
     assert db.execute('SELECT count(*) FROM payments WHERE quote_id=?', (q['id'],)).fetchone()[0] == 0
 
 
-@pytest.mark.parametrize('target', ['/admin?status=new&q=Alex%20Demo', '/admin?q=why?'])
-def test_sign_in_resumes_requested_admin_page_and_filters(app, target):
+@pytest.mark.parametrize('target', ['/admin?status=new&q=Alex%20Demo', '/admin?q=why?', '/admin/services?status=draft'])
+@pytest.mark.parametrize('require_totp', [False, True])
+def test_sign_in_resumes_requested_admin_page_and_filters(app, target, require_totp):
     from urllib.parse import parse_qs, urlsplit
 
-    app.config['REQUIRE_TOTP'] = False
+    app.config['REQUIRE_TOTP'] = require_totp
     client = app.test_client()
     redirect_to_login = client.get(target)
     assert parse_qs(urlsplit(redirect_to_login.location).query)['next'] == [target]
@@ -210,6 +211,7 @@ def test_sign_in_resumes_requested_admin_page_and_filters(app, target):
     response = client.post('/admin/login', data={
         'csrf_token': Controls(page.text).value('csrf_token'),
         'email': 'owner@example.test', 'password': PASSWORD, 'next': target,
+        'otp': totp_code(TOTP_SECRET) if require_totp else '',
     })
     assert response.location == target
     assert client.get(response.location).status_code == 200
