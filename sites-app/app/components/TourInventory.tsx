@@ -81,11 +81,12 @@ function Field({ label, help, children }: { label: string; help?: string; childr
 }
 
 function SeatCounts({ departure }: { departure: TourDeparture }) {
-  return <div className="inventory-seats" aria-label="Departure capacity">
+  const booked = departure.bookedSeats;
+  return <><div className="inventory-seats" aria-label="Departure capacity">
     <div><strong>{departure.bookedSeats ?? '—'}</strong><span>confirmed</span></div>
     <div><strong>{departure.remainingSeats ?? '—'}</strong><span>places free</span></div>
     <div><strong>{departure.capacity}</strong><span>total places</span></div>
-  </div>;
+  </div>{typeof booked === 'number' && <div className="inventory-fill"><progress max={departure.capacity} value={booked} aria-label={`${booked} of ${departure.capacity} places confirmed`} /><span>{booked >= departure.capacity ? 'Fully booked' : booked === 0 ? 'No confirmed guests yet' : `${Math.round(booked / departure.capacity * 100)}% of places confirmed`}</span></div>}</>;
 }
 
 export default function TourInventory({ data, mutate, busy, refresh }: Props) {
@@ -174,6 +175,8 @@ function DepartureEditor({ initial, departure, data, mutate, busy, now, onCopy, 
     const capacity = Number(value.capacity);
     if (!value.serviceId) { setError('Choose a tour from your catalogue.'); return; }
     if (!Number.isFinite(new Date(start).getTime()) || !Number.isFinite(new Date(end).getTime()) || new Date(end).getTime() <= new Date(start).getTime()) { setError('Choose a finish date and time after the departure starts.'); return; }
+    if (Date.parse(start) <= Date.now()) { setError('Choose a future departure date and time in Georgia.'); return; }
+    if (Date.parse(end) - Date.parse(start) > 7 * 86400000) { setError('A departure can last up to seven days. Choose an earlier finish date.'); return; }
     if (!Number.isInteger(capacity) || capacity < Math.max(1, booked ?? 0) || capacity > maxCapacity) { setError(vehicle ? `Choose ${Math.max(1, booked ?? 0)}–${maxCapacity} total places. ${vehicle.name} carries ${vehicle.capacity} passengers.` : `Choose ${Math.max(1, booked ?? 0)}–50 total places, keeping every confirmed guest’s place.`); return; }
     const guide = data.resources.find(resource => resource.id === value.guideId && resource.kind === 'guide');
     if (!guide || (!locked && !guide.active)) { setError('Choose an active guide. You can add or activate guides in Resources.'); return; }

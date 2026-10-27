@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowUpRight, CalendarDays, Check, CheckCircle2, ClipboardList, Copy, Download, Leaf, Mountain, Plus, RefreshCw, Settings2, ShieldCheck, SlidersHorizontal, Users, X } from 'lucide-react';
 import type { AdminData, AvailabilityBlock, QuoteItem, Resource, Service, Settings, TourDeparture, TravelRequest } from '../lib/types';
 import TourInventory, { mayLeave, useUnsavedDraft } from './TourInventory';
+import { readAdminData, saveAdminChange } from '../lib/admin-client';
 import '../admin.css';
 
 type Mutation = (body: Record<string, unknown>, success: string) => Promise<boolean>;
@@ -42,23 +43,20 @@ function Empty({ title, children }: { title: string; children: React.ReactNode }
 export default function AdminApp() {
   const [data, setData] = useState<AdminData | null>(null);
   const [tab, setTab] = useState<Tab>('requests');
-  const [busy, setBusy] = useState(false);
+  const [working, setBusy] = useState(false);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
+  const operationInFlight = useRef(false);
+  const busy = working || needsRefresh;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const load = useCallback(async () => {
-    const response = await fetch('/api/admin', { credentials: 'same-origin', cache: 'no-store' });
-    const result = await response.json() as AdminData & { error?: string };
-    if (!response.ok) throw new Error(result.error || 'The owner panel could not be loaded.');
+    const result = await readAdminData();
     setData(result);
   }, []);
   useEffect(() => {
     const controller = new AbortController();
-    fetch('/api/admin', { credentials: 'same-origin', cache: 'no-store', signal: controller.signal }).then(async response => {
-      const result = await response.json() as AdminData & { error?: string };
-      if (!response.ok) throw new Error(result.error || 'The owner panel could not be loaded.');
-      return result;
-    }).then(result => setData(result)).catch(error => { if (error.name !== 'AbortError') setError(error.message); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    readAdminData(controller.signal).then(result => { if (!controller.signal.aborted) setData(result); }).catch(() => { if (!controller.signal.aborted) setError('The workspace could not be loaded. Check your connection and try again.'); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, []);
   useEffect(() => {
@@ -69,32 +67,31 @@ export default function AdminApp() {
     window.addEventListener('admin:navigate', navigate);
     return () => window.removeEventListener('admin:navigate', navigate);
   }, [busy]);
-  const mutate: Mutation = async (body, success) => {
+  async function applyChange(body: Record<string, unknown>, success: string, path = '/api/admin') {
+    if (operationInFlight.current || needsRefresh) return false;
+    operationInFlight.current = true;
     setBusy(true); setError(''); setNotice('');
     try {
-      const response = await fetch('/api/admin', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const result = await response.json() as AdminData & { error?: string };
-      if (!response.ok) throw new Error(result.error || 'This change could not be saved.');
-      await load(); setNotice(success); return true;
-    } catch (error) { setError(error instanceof Error ? error.message : 'This change could not be saved.'); window.scrollTo({ top: 0, behavior: 'smooth' }); return false; }
-    finally { setBusy(false); }
-  };
+      const result = await saveAdminChange(body, load, path);
+      setNeedsRefresh(result.needsRefresh);
+      setError(result.error);
+      if (result.saved) setNotice(success);
+      if (result.error) window.scrollTo({ top: 0, behavior: 'smooth' });
+      return result.saved;
+    } finally { operationInFlight.current = false; setBusy(false); }
+  }
+  const mutate: Mutation = (body, success) => applyChange(body, success);
   async function bootstrap() {
-    setBusy(true); setError('');
-    try {
-      const response = await fetch('/api/admin/bootstrap', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-      const result = await response.json() as AdminData & { error?: string };
-      if (!response.ok) throw new Error(result.error || 'Owner setup could not be completed.');
-      await load(); setNotice('Owner access is set up. Review settings and resources before taking requests.');
-    } catch (error) { setError(error instanceof Error ? error.message : 'Owner setup could not be completed.'); }
-    finally { setBusy(false); }
+    await applyChange({}, 'Owner access is set up. Review settings and resources before taking requests.', '/api/admin/bootstrap');
   }
   async function refresh() {
-    if (busy || !mayLeave(undefined, 'Refresh may replace unsaved changes if these records have changed. Continue refreshing?')) return;
+    if (operationInFlight.current || working || !mayLeave(undefined, 'Refresh may replace unsaved changes if these records have changed. Continue refreshing?')) return;
+    operationInFlight.current = true;
     setBusy(true); setError('');
-    try { await load(); setNotice('Workspace is up to date.'); }
+    if (!data) setLoading(true);
+    try { await load(); setNeedsRefresh(false); setNotice('Workspace is up to date. Check the latest record before repeating an action.'); }
     catch (error) { setError(error instanceof Error ? error.message : 'Refresh failed.'); }
-    finally { setBusy(false); }
+    finally { operationInFlight.current = false; setBusy(false); setLoading(false); }
   }
   function changeTab(next: Tab) { if (busy || next === tab || !mayLeave()) return; setTab(next); setNotice(''); setError(''); }
   const pending = data?.requests.filter(request => request.status === 'enquiry').length ?? 0;
@@ -113,14 +110,16 @@ export default function AdminApp() {
       {([{ id: 'requests', title: 'Requests', icon: ClipboardList }, { id: 'inventory', title: 'Inventory', icon: CalendarDays }, { id: 'catalogue', title: 'Catalogue', icon: SlidersHorizontal }, { id: 'resources', title: 'Resources', icon: Users }, { id: 'settings', title: 'Settings', icon: Settings2 }] as const).map(({ id, title, icon: Icon }) => <button key={id} type="button" id={`admin-tab-${id}`} role="tab" aria-controls="admin-active-panel" tabIndex={tab === id ? 0 : -1} aria-selected={tab === id} disabled={busy} onClick={() => changeTab(id)}><Icon aria-hidden="true" />{title}{id === 'requests' && pending > 0 && <span className="admin-count">{pending}</span>}</button>)}
     </nav>}
     <main className="admin-main">
-      {error && <div className="admin-notice error" role="alert"><X size={18} /><p>{error}</p>{!data && <button className="admin-btn small" type="button" onClick={() => { setLoading(true); setError(''); load().catch(error => setError(error.message)).finally(() => setLoading(false)); }}>Retry</button>}</div>}
+      {error && <div className="admin-notice error" role="alert"><X size={18} /><p>{error}</p>{(needsRefresh || !data) && <button className="admin-btn small" type="button" disabled={working} onClick={() => void refresh()}><RefreshCw size={15} />{working ? 'Refreshing…' : needsRefresh ? 'Refresh workspace' : 'Try again'}</button>}</div>}
       {notice && <div className="admin-notice" role="status"><CheckCircle2 size={18} /><p>{notice}</p><button className="admin-btn small" type="button" aria-label="Dismiss notification" onClick={() => setNotice('')}><X size={14} /></button></div>}
       {loading ? <div className="admin-empty"><div className="admin-spinner" aria-label="Loading owner panel" style={{ margin: '0 auto 16px' }} /><p>Opening your workspace…</p></div> : !data ? <div className="admin-panel admin-setup"><Empty title="Owner access required">Open this private pilot with your authorised account to manage requests.</Empty></div> : !data.initialized ? <div className="admin-panel admin-setup"><div className="admin-panel-inner"><div className="admin-eyebrow">First-time setup · Private pilot</div><h1>A simpler day<br />for your local business.</h1><p>Set up the owner account before you add real prices, availability and your central WhatsApp number. Proposed services are clearly marked. Publish confirmed details only after review.</p><ul className="admin-setup-list"><li><ShieldCheck /><span>Your current signed-in account becomes the owner.</span></li><li><ClipboardList /><span>Requests, quotes, deposits and bookings have separate steps.</span></li><li><Users /><span>Rooms, guides, vehicles and drivers share one availability record.</span></li></ul><div className="admin-notice info"><p>Use this setup only in a private pilot. The first account to claim ownership will control the business.</p></div><button className="admin-btn primary" type="button" disabled={busy} onClick={bootstrap}>{busy ? 'Setting up…' : 'Set up my owner account'}<ArrowUpRight size={16} /></button></div></div> : <section id="admin-active-panel" role="tabpanel" aria-labelledby={`admin-tab-${tab}`}>
+        <fieldset className="admin-workspace-fields" disabled={busy} aria-label="Workspace controls" aria-busy={working}>
         {tab === 'requests' && <Requests data={data} mutate={mutate} busy={busy} refresh={refresh} />}
         {tab === 'inventory' && <TourInventory data={data} mutate={mutate} busy={busy} refresh={refresh} />}
         {tab === 'catalogue' && <Catalogue data={data} mutate={mutate} busy={busy} />}
         {tab === 'resources' && <Resources data={data} mutate={mutate} busy={busy} />}
-        {tab === 'settings' && <BusinessSettings data={data} mutate={mutate} busy={busy} />}
+        {tab === 'settings' && <BusinessSettings key={JSON.stringify(data.settings)} data={data} mutate={mutate} busy={busy} />}
+        </fieldset>
       </section>}
     </main>
   </div>;

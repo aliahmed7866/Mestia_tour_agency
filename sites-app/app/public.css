@@ -43,3 +43,11 @@
 .mt-public .mt-icon-button{min-width:40px;min-height:40px}.mt-public .mt-trip-item-header .mt-icon-button{width:40px;height:40px}
 .mt-public .mt-add-button{min-height:42px}.mt-public .mt-filters button{min-height:42px}.mt-public .mt-service-picker button{min-height:42px}
 @media(max-width:600px){.mt-modal-dialog{padding:0}.mt-modal-dialog[open]{align-items:flex-end}.mt-modal-dialog .mt-modal{max-height:94dvh;border-radius:16px 16px 0 0}.mt-request-actions{padding-bottom:calc(16px + env(safe-area-inset-bottom))}.mt-modal-dialog .mt-modal-close{top:11px;right:11px;width:40px;height:40px}.mt-field select{font-size:16px}.mt-party-field{max-width:150px}.mt-add-services summary{font-size:13px;min-height:48px}.mt-departure-summary strong{font-size:14px}.mt-departure-summary small{font-size:12px}.mt-copy-link{font-size:13px;min-height:44px}.mt-copy-notice{font-size:12px}.mt-trip-dock{bottom:calc(12px + env(safe-area-inset-bottom))}.mt-progress li{font-size:10px}.mt-filters{flex-wrap:wrap}.mt-public .mt-header-cta{min-height:42px}.mt-plan-summary{font-size:13px}}
+.mt-request-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.mt-request-fields:disabled input, .mt-request-fields:disabled select, .mt-request-fields:disabled textarea { cursor: wait; }
+.mt-availability-tools { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 16px; margin: 0 35px 6px; color: #586858; font-size: 12px; line-height: 1.5; }
+.mt-availability-tools button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+.mt-availability-tools button:disabled { opacity: .65; cursor: wait; }
+.mt-trip-unavailable { border-color: #d4b9a3 !important; background: #fbf3ea !important; }
+@media (max-width: 600px) { .mt-availability-tools { margin-inline: 22px; font-size: 11px; } }
+@media (max-width: 370px) { .mt-availability-tools { margin-inline: 18px; } }

@@ -11,6 +11,9 @@
   font-size: 15px;
 }
 .admin-shell * { box-sizing: border-box; }
+.admin-workspace-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.admin-workspace-fields:disabled { opacity: .72; }
+.admin-workspace-fields:disabled input, .admin-workspace-fields:disabled select, .admin-workspace-fields:disabled textarea { cursor: not-allowed; }
 .admin-shell a { color: inherit; }
 .admin-shell button, .admin-shell input, .admin-shell select, .admin-shell textarea { font: inherit; }
 .admin-shell button, .admin-shell input, .admin-shell select { min-height: 44px; }
