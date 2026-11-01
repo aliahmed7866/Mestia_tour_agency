@@ -1,6 +1,6 @@
 export type ServiceKind = 'tour' | 'stay' | 'taxi';
 export type Service = { id:string; kind:ServiceKind; title:string; description:string; duration:string; difficulty:string; price:number|null; priceBasis:string; inclusions:string; season:string; maxGuests:number; proposed:boolean; published:boolean; image:string };
-export type Settings = { businessName:string; whatsapp:string; discountPercent:number; discountEnabled:boolean; policy:string; privacy:string; operatingHours:string; adminUserId?:string; policyVersion:string; maxConcurrentTours?:number };
+export type Settings = { businessName:string; whatsapp:string; guideInstagram:string; guideFacebook:string; guesthouseInstagram:string; guesthouseFacebook:string; discountPercent:number; discountEnabled:boolean; policy:string; privacy:string; operatingHours:string; adminUserId?:string; policyVersion:string; maxConcurrentTours?:number };
 export type Resource = {id:string; name:string; kind:'room'|'guide'|'driver'|'vehicle'|'departure'; capacity:number; bufferMinutes:number; active:boolean};
 export type RequestItem = {serviceId:string; date:string; endDate?:string; time?:string; pickup?:string; destination?:string; luggage?:string;departureId?:string};
 export type QuoteItem = {serviceId:string; title:string; amount:number; start:string; end:string; resourceIds:string[]; units:number;departureId?:string};
