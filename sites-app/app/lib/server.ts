@@ -7,7 +7,7 @@ import {z} from 'zod';
 import {bookingInventory,getTourLimit,getDepartures,mutateInventory,validateRequestedDepartures,validateQuotedDepartures} from './inventory-server';
 const SITE_ORIGIN='https://mestia-mountain-travel.aware-lily-4001.chatgpt.site';
 export function database(){if(!env.DB)throw new AppError('Database unavailable. Please try again later.',503);return env.DB;}
-export async function getSettings():Promise<Settings>{const row=await database().prepare("SELECT data FROM settings WHERE id='business'").first<{data:string}>();return {...DEFAULT_SETTINGS,...(row?JSON.parse(row.data):{}),maxConcurrentTours:await getTourLimit()};}
+export async function getSettings():Promise<Settings>{const row=await database().prepare("SELECT data FROM settings WHERE id='business'").first<{data:string}>();const saved=row?JSON.parse(row.data) as Partial<Settings>:{};return {...DEFAULT_SETTINGS,...saved,businessName:!saved.businessName||['Mestia Travel','Mestia Tours'].includes(saved.businessName)?'Svaneti Guide':saved.businessName,maxConcurrentTours:await getTourLimit()};}
 async function list<T>(table:'services'|'resources'|'requests'|'blocks'):Promise<T[]>{const rows=await database().prepare(`SELECT data FROM ${table}`).all<{data:string}>();return rows.results.map(row=>JSON.parse(row.data));}
 export async function getServices():Promise<Service[]>{const s=await list<Service>('services');return s.length?s:structuredClone(PROPOSED_SERVICES);}
 export const getResources=()=>list<Resource>('resources');
