@@ -1,0 +1,71 @@
+name: Svaneti Guide - Cloudflare Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Choose database initialization or staging deployment"
+        type: choice
+        required: true
+        default: deploy-staging
+        options:
+          - initialize-d1
+          - deploy-staging
+      confirm_database:
+        description: "For initialize-d1 only, type INITIALIZE (run once on an EMPTY D1 database)"
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: svaneti-guide-cloudflare
+  cancel-in-progress: false
+
+jobs:
+  cloudflare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: sites-app
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: sites-app/pnpm-lock.yaml
+      - name: Check Cloudflare credentials are configured
+        shell: bash
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Configure CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in GitHub Actions repository secrets."
+            exit 1
+          fi
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Initialize empty D1 database (explicit opt-in only)
+        if: ${{ inputs.operation == 'initialize-d1' }}
+        shell: bash
+        run: |
+          if [ "${{ inputs.confirm_database }}" != "INITIALIZE" ]; then
+            echo "::error::Type INITIALIZE in the confirmation field. Never run this against a database containing real bookings."
+            exit 1
+          fi
+          pnpm exec wrangler d1 execute svaneti-guide --remote --config wrangler.jsonc --file drizzle/0000_tricky_sage.sql
+          pnpm exec wrangler d1 execute svaneti-guide --remote --config wrangler.jsonc --file drizzle/0001_equal_stark_industries.sql
+      - name: Build standalone Worker
+        if: ${{ inputs.operation == 'deploy-staging' }}
+        run: pnpm exec vite build --config vite.cloudflare.config.ts
+      - name: Deploy to workers.dev staging address
+        if: ${{ inputs.operation == 'deploy-staging' }}
+        run: pnpm exec wrangler deploy --config dist/server/wrangler.json
