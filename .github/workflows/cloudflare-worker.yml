@@ -42,8 +42,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: pnpm
-          cache-dependency-path: sites-app/pnpm-lock.yaml
       - name: Check Cloudflare credentials are configured
         shell: bash
         run: |
