@@ -1,0 +1,12 @@
+# Owner login rollout (do not remove Cloudflare Access prematurely)
+
+This feature is **not enabled merely by merging the pull request**. It requires the existing owner to complete setup and test a real email-code login before changing the Access policy.
+
+1. Back up the existing D1 database `svaneti-guide`. Do not recreate it. Apply `migrations/0007_owner_auth.sql` to the existing database.
+2. Configure Cloudflare Worker secrets `OWNER_AUTH_SECRET` (cryptographically random, at least 32 characters), `RESEND_API_KEY`, and `OWNER_EMAIL_FROM` (verified sending address in Resend). Keep secrets out of git. `ADMIN_EMAIL` must be the verified intended owner.
+3. Keep `OWNER_LOGIN_MODE` unset during initial setup. Keep the existing Cloudflare Access policy active. Open `/admin` through Cloudflare Access and set the unique owner password.
+4. Confirm the email service can send a code to the configured owner. In a controlled staging environment, set `OWNER_LOGIN_MODE=native` and verify password, invalid password, incorrect code, expired code, one-time use, rate limiting, logout, expired sessions, and admin API denial without a session. Confirm that the configured owner email matches the existing `settings.adminUserId`; if it does not, migrate that value securely before cutover.
+5. Only after staging verification, configure `OWNER_LOGIN_MODE=native` on production, deploy, then remove the Cloudflare Access challenge from the relevant site paths. Verify the branded sign-in, email delivery, protected admin endpoints, and logout from an unauthenticated browser. **Do not leave admin endpoints exposed without native mode and verified sessions.**
+6. Rollback: restore the Cloudflare Access policy first, then unset `OWNER_LOGIN_MODE`. Do not delete owner tables or the existing database.
+
+Notes: PBKDF2-SHA256 with 310,000 iterations and a server-held pepper is used to avoid plaintext passwords; Argon2id is preferable if a suitable audited Workers-compatible implementation is added later. Sessions expire after eight hours. OTPs expire after five minutes and have at most five guesses. IP-based rate limits use the Cloudflare-provided client IP; configure edge WAF rules as an additional safeguard. Resend incurs provider costs. Account recovery is intentionally not exposed as an anonymous password reset endpoint; recovery currently requires verified operator intervention. Security review and a real end-to-end test are required before production cutover.
