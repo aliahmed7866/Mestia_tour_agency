@@ -58,3 +58,8 @@
 .mt-whatsapp-floating{position:fixed;right:18px;bottom:22px;z-index:70;display:flex;align-items:center;gap:9px;border-radius:999px;padding:13px 18px;background:#176c47;color:#fff!important;box-shadow:0 8px 24px #1b30263d;text-decoration:none;font-weight:700;font-size:14px;line-height:1.2}
 .mt-whatsapp-floating:hover{background:#125437}.mt-whatsapp-floating:focus-visible{outline:3px solid var(--rust);outline-offset:4px}
 @media(max-width:680px){.mt-contact-strip{align-items:flex-start;flex-direction:column;gap:5px}.mt-whatsapp-floating{right:12px;bottom:14px;padding:13px 15px}.mt-whatsapp-floating span{font-size:13px}.mt-trip-dock~.mt-whatsapp-floating{bottom:95px}}
+
+.mt-social-links{display:flex;flex-wrap:wrap;gap:10px 20px;margin:16px 0 24px;padding:16px 0;border-top:1px solid var(--stone)}
+.mt-social-links a{display:inline-flex;align-items:center;gap:6px;text-decoration:underline;text-underline-offset:4px;font-weight:600}
+.mt-offer-strip{margin-top:12px;padding:14px 18px;background:#e7ebdf;border:1px solid #cad5c5;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;color:var(--forest-deep)}
+.mt-offer-strip strong{font-weight:800}.mt-offer-strip small{display:block;color:var(--muted)}
