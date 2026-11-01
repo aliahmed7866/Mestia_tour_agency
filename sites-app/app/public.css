@@ -63,3 +63,15 @@
 .mt-social-links a{display:inline-flex;align-items:center;gap:6px;text-decoration:underline;text-underline-offset:4px;font-weight:600}
 .mt-offer-strip{margin-top:12px;padding:14px 18px;background:#e7ebdf;border:1px solid #cad5c5;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;color:var(--forest-deep)}
 .mt-offer-strip strong{font-weight:800}.mt-offer-strip small{display:block;color:var(--muted)}
+
+/* Compact, native, keyboard-accessible locale controls matching the forest/cream header. */
+.mt-preferences{display:flex;align-items:center;gap:3px;padding:5px 8px;border:1px solid #d8ded3;border-radius:999px;background:#fffdf8;flex-shrink:0;box-shadow:0 2px 9px #263d320a}
+.mt-preference{display:flex;align-items:center;gap:5px;min-height:32px;padding:0 5px;color:var(--forest);position:relative}
+.mt-preference-icon{font-size:14px;line-height:1;color:#667b61;font-weight:700}
+.mt-preference select{appearance:none;-webkit-appearance:none;background:transparent;border:0;outline-offset:4px;color:inherit;font-size:12px;font-weight:700;letter-spacing:.01em;padding:6px 0;cursor:pointer;max-width:100px}
+.mt-preference svg{pointer-events:none;color:#708174}
+.mt-preference-divider{height:20px;width:1px;background:#d8ded3}
+.mt-preference:focus-within{outline:2px solid #5c775f;outline-offset:1px;border-radius:6px}
+.mt-preference select:focus{outline:none}
+@media(max-width:900px){.mt-preferences{order:2}.mt-preference select{max-width:82px}.mt-preference{gap:3px}}
+@media(max-width:480px){.mt-preferences{padding:3px 5px;gap:1px}.mt-preference{padding:0 3px}.mt-preference select{font-size:11px;max-width:70px}.mt-preference-icon{display:none}}
