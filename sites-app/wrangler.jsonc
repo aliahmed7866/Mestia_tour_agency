@@ -7,8 +7,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "svaneti-guide",
-      "database_id": "REPLACE_WITH_REAL_D1_DATABASE_ID"
+      "database_name": "svaneti-guidi",
+      "database_id": "ed402ed2-6d21-40b2-b928-1a2bc5341400"
     }
   ],
   "vars": {
