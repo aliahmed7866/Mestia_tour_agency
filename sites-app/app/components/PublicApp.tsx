@@ -113,7 +113,8 @@ export default function PublicApp() {
     const controller = new AbortController();
     fetch("https://api.frankfurter.dev/v1/latest?base=GEL&symbols=USD,EUR,GBP", { signal: controller.signal })
       .then(response => { if (!response.ok) throw new Error("Rates unavailable"); return response.json(); })
-      .then((data: {rates?:Record<string,number>}) => {
+      .then((value) => {
+        const data = value as {rates?:Record<string,number>};
         if (data.rates && ["USD","EUR","GBP"].every(key => Number.isFinite(data.rates?.[key]) && (data.rates?.[key] || 0) > 0)) setRates(data.rates);
       }).catch(() => {});
     return () => controller.abort();
@@ -286,7 +287,7 @@ export default function PublicApp() {
     {contactLink && <a className="mt-whatsapp-floating" href={contactLink} target="_blank" rel="noopener noreferrer" aria-label="Ask Svaneti Guide a question on WhatsApp"><MessageCircle size={22}/><span>Chat on WhatsApp</span></a>}
     <header className="mt-header mt-container">
       <a className="mt-logo" href="#" aria-label={`${settings?.businessName || "Svaneti Guide"} home`}><span className="mt-logo-icon"><Mountain size={27} strokeWidth={1.4}/></span><span>{settings?.businessName || "Svaneti Guide"}<small>SVANETI, GEORGIA</small></span></a>
-      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}><label style={{fontSize:12}}><span className="mt-sr-only">Display currency</span><select aria-label="Display currency" value={currency} onChange={event=>setCurrency(event.target.value as DisplayCurrency)}>{(["GEL","USD","EUR","GBP"] as const).map(c=><option key={c} value={c}>{c}</option>)}</select></label><label style={{fontSize:12}}><span className="mt-sr-only">Website language</span><select aria-label="Website language" value={language} onChange={event=>setLanguage(event.target.value as DisplayLanguage)}><option value="en">EN</option><option value="ka">ქართული</option></select></label></div><nav className="mt-nav" aria-label="Main navigation"><a href="#experiences">{language==="ka"?"ტურები":"Explore"}</a><a href="#stay">{language==="ka"?"სასტუმრო სახლი":"The guesthouse"}</a><a href="#questions">{language==="ka"?"კითხვები":"Good to know"}</a></nav>
+      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}><label style={{fontSize:12}}><span className="mt-sr-only">Display currency</span><select aria-label="Display currency" value={currency} onChange={event=>setCurrency(event.target.value as DisplayCurrency)}>{(["GEL","USD","EUR","GBP"] as const).map(c=><option key={c} value={c}>{c}</option>)}</select></label><label style={{fontSize:12}}><span className="mt-sr-only">Website language</span><select aria-label="Website language" value={language} onChange={event=>setLanguage(event.target.value as DisplayLanguage)}><option value="en">EN</option><option value="ka">ქართული (partial)</option></select></label></div><nav className="mt-nav" aria-label="Main navigation"><a href="#experiences">{language==="ka"?"ტურები":"Explore"}</a><a href="#stay">{language==="ka"?"სასტუმრო სახლი":"The guesthouse"}</a><a href="#questions">{language==="ka"?"კითხვები":"Good to know"}</a></nav>
       {saved ? <a className="mt-button mt-button-dark mt-header-cta" href={`/request#${saved.token}`}>My request <ArrowRight size={16}/></a> : <button className="mt-button mt-button-dark mt-header-cta" onClick={beginPlan}>{items.length ? "Review my trip" : "Explore services"} <ArrowRight size={16}/></button>}
     </header>
 
