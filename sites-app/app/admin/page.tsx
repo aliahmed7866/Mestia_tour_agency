@@ -1,3 +1,3 @@
-import AdminApp from '../components/AdminApp';
+import OwnerGate from '../components/OwnerGate';
 export const dynamic='force-dynamic';
-export default function Admin(){return <AdminApp/>;}
+export default function Admin(){return <OwnerGate/>;}
