@@ -215,3 +215,13 @@
 .admin-help-topic ol{padding:6px 24px 16px 43px;margin:0}
 .admin-help-topic li{margin:13px 0;font-size:13px;line-height:1.65}
 @media(max-width:760px){.admin-quick-create,.admin-help-grid{grid-template-columns:1fr}.admin-quick-choice{min-height:66px!important;padding:14px}.admin-step-strip{gap:5px}.admin-step-strip span{font-size:11px}}
+
+.admin-resource-demo{display:flex;align-items:center;justify-content:space-between;gap:15px;background:#edf2e8;border:1px solid #d8e3d2;border-radius:10px;padding:14px 18px;margin:-8px 0 18px}
+.admin-resource-demo strong{font-size:14px}
+.admin-resource-demo p{font-size:12px;margin:6px 0 0;line-height:1.5}
+.admin-example-guides{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.admin-example-guide{border:1px dashed #b8c6ad;border-radius:10px;padding:14px;background:#fffefa;display:grid;align-content:start;gap:9px}
+.admin-example-guide strong{font-size:14px}
+.admin-example-guide p,.admin-example-guide small{font-size:12px;line-height:1.5;margin:0}
+.admin-example-guides>.admin-smalltext{grid-column:1/-1;margin:0}
+@media(max-width:760px){.admin-resource-demo{align-items:flex-start;flex-direction:column}.admin-example-guides{grid-template-columns:1fr}}
