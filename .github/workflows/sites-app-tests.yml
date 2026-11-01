@@ -30,3 +30,5 @@ jobs:
       - run: node node_modules/typescript/bin/tsc --noEmit
       - run: node --test tests/*.test.mjs
       - run: pnpm build
+      - name: Build standalone Cloudflare Worker
+        run: node node_modules/vite/bin/vite.js build --config vite.cloudflare.config.ts
