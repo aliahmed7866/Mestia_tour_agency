@@ -22,7 +22,7 @@
 5. In Cloudflare Zero Trust → Access → Applications, create a self-hosted application for the domain, protecting **/admin*** and **/api/admin*** with an allow policy for your specific email. Include `/api/admin/bootstrap` and `/api/admin/export`. Use the same Access application AUD tag. Configure your login method and test on a private preview first.
 6. Set these **Worker secrets** in the Cloudflare dashboard (or via `pnpm exec wrangler secret put NAME`, targeting the deployed Worker):
    - `ACCESS_TEAM_DOMAIN`: the exact team hostname such as `yourteam.cloudflareaccess.com`, no protocol.
-   - `ACCESS_AUD`: the Access application's application audience (AUD) tag.
+   - `ACCESS_AUD`: the Access application's audience (AUD) tag; if protecting /admin separately, comma-separate the two AUD tags.
    - `ADMIN_EMAIL`: the single owner email permitted to administer the business.
    Do not commit personal addresses, tokens, account IDs or JWTs. The server verifies Access JWT signature, issuer, audience, expiry and owner email; a spoofed identity header is not accepted on the Cloudflare deployment.
 7. Build and deploy from `sites-app`: `node scripts/deploy-cloudflare.mjs`. If secrets were not already set, deploy first then configure them **before any admin login**. The owner API fails closed without them.
