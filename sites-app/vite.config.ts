@@ -68,7 +68,9 @@ export default defineConfig(async ({ command }) => {
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
         inspectorPort: false,
         config: {
-          ...localBindingConfig,
+          // The production Wrangler config already defines DB. Injecting the
+          // local placeholder binding during build duplicates DB in dist/server/wrangler.json.
+          ...(command === "serve" ? localBindingConfig : {}),
           ...(command === "serve"
             ? {
                 services: [
