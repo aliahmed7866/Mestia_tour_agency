@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "svaneti-guide",
+  "main": "./build/cloudflare-worker.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "svaneti-guide",
+      "database_id": "REPLACE_WITH_REAL_D1_DATABASE_ID"
+    }
+  ],
+  "vars": {
+    "DEPLOY_TARGET": "cloudflare"
+  }
+}
