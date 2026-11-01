@@ -20,13 +20,10 @@
    ```
    Back up D1 before future migrations. Do not reapply blindly.
 5. In Cloudflare Zero Trust → Access → Applications, create a self-hosted application for the domain, protecting **/admin*** and **/api/admin*** with an allow policy for your specific email. Include `/api/admin/bootstrap` and `/api/admin/export`. Use the same Access application AUD tag. Configure your login method and test on a private preview first.
-6. Set these **Worker secrets** in the Cloudflare dashboard (or via `pnpm exec wrangler secret put NAME`, targeting the deployed Worker):
-   - `ACCESS_TEAM_DOMAIN`: the exact team hostname such as `yourteam.cloudflareaccess.com`, no protocol.
-   - `ACCESS_AUD`: the Access application's audience (AUD) tag; if protecting /admin separately, comma-separate the two AUD tags.
-   - `ADMIN_EMAIL`: the single owner email permitted to administer the business.
-   Do not commit personal addresses, tokens, account IDs or JWTs. The server verifies Access JWT signature, issuer, audience, expiry and owner email; a spoofed identity header is not accepted on the Cloudflare deployment.
-7. Build and deploy from `sites-app`: `node scripts/deploy-cloudflare.mjs`. If secrets were not already set, deploy first then configure them **before any admin login**. The owner API fails closed without them.
-8. Set `NEXT_PUBLIC_SITE_URL=https://svanetiguide.com` for canonical metadata when enabling public launch. Do not enable indexing until real services, policies, domain and SEO are reviewed.
+6. Access identity configuration is already included as non-credential Worker vars in `wrangler.jsonc`: `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` and `ADMIN_EMAIL`. These are identifiers, **not API credentials**. The server verifies Access JWT signature, issuer, audience, expiry and owner email. Never commit JWTs, API tokens or passwords. If protecting /admin with a separate Access application, add its AUD tag to the comma-separated `ACCESS_AUD` setting.
+   **Important:** the application protects owner API data even on the unprotected `workers.dev` preview, but Cloudflare Access login itself is configured only for the production hostname. Verify admin login and policy behavior on the production hostname before launch.
+7. Recommended phone-friendly route: configure GitHub Actions repository secrets `CLOUDFLARE_API_TOKEN` (a narrowly scoped Cloudflare API token with Workers Scripts Edit and D1 Edit for the correct account) and `CLOUDFLARE_ACCOUNT_ID`. **Never paste either into chat or commit them.** After this PR is merged, open GitHub → Actions → **Svaneti Guide - Cloudflare Worker** → Run workflow. Choose `initialize-d1`, enter `INITIALIZE` (only on an empty database), then separately choose `deploy-staging`. Check the run logs. The workflow does not attach the custom domain. Alternatively, build and deploy from `sites-app` with `node scripts/deploy-cloudflare.mjs` using your own Wrangler login.
+8. Set `NEXT_PUBLIC_SITE_URL=https://svanetiguide.com` at build time for canonical metadata when enabling public launch. Do not enable indexing until real services, policies, domain and SEO are reviewed.
 9. Verify public requests, quotes, quote acceptance, manual contact/deposit evidence, room/tour resource conflicts, taxi dispatch and cancellation; verify the admin API denies anonymous and forged-header requests.
 10. Export and restore a D1 backup to a separate test database. Confirm live data from any old host is migrated deliberately; there is **no automatic database sync**.
 
@@ -45,5 +42,5 @@ Keep the existing hosted pilot unchanged. If a Cloudflare deployment fails, disa
 - Production hostname: `svanetiguide.com`
 - Owner allow-policy email: `svanetiguide@gmail.com`
 - Access application AUD tag: `f6f2cbcfb75d4f7d62e38a15ef9217f289eca7715ace28d680cb1b60567ecf10`
-- Zero Trust team domain: **still required** (`*.cloudflareaccess.com`).
+- Zero Trust team domain: `autumn-unit-071c.cloudflareaccess.com`.
 - These values identify an Access application; they are not login credentials. Configure `ADMIN_EMAIL` and `ACCESS_AUD` as Worker environment settings during deployment; keep JWTs, API tokens and account credentials private.

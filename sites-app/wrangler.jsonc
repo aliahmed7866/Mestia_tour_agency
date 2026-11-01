@@ -12,6 +12,9 @@
     }
   ],
   "vars": {
-    "DEPLOY_TARGET": "cloudflare"
+    "DEPLOY_TARGET": "cloudflare",
+    "ACCESS_TEAM_DOMAIN": "autumn-unit-071c.cloudflareaccess.com",
+    "ACCESS_AUD": "f6f2cbcfb75d4f7d62e38a15ef9217f289eca7715ace28d680cb1b60567ecf10",
+    "ADMIN_EMAIL": "svanetiguide@gmail.com"
   }
 }
