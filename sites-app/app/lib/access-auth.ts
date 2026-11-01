@@ -11,13 +11,13 @@ function decode(value:string):any{
 function config(){
   const vars=env as unknown as Record<string,string|undefined>;
   const team=vars.ACCESS_TEAM_DOMAIN?.trim();
-  const aud=vars.ACCESS_AUD?.trim();
+  const audiences=(vars.ACCESS_AUD||'').split(',').map(s=>s.trim()).filter(Boolean);
   const owner=vars.ADMIN_EMAIL?.trim().toLowerCase();
-  if(!team||!aud||!owner||!/^[-a-z0-9]+\.cloudflareaccess\.com$/.test(team))throw new AppError('Owner authentication is not configured.',503);
-  return {team,aud,owner};
+  if(!team||!audiences.length||!owner||!/^[-a-z0-9]+\.cloudflareaccess\.com$/.test(team))throw new AppError('Owner authentication is not configured.',503);
+  return {team,audiences,owner};
 }
 export async function verifiedOwner(req:Request):Promise<string>{
-  const {team,aud,owner}=config();
+  const {team,audiences,owner}=config();
   const token=req.headers.get('Cf-Access-Jwt-Assertion');
   if(!token)throw new AppError('Sign in through Cloudflare Access.',401);
   const parts=token.split('.');
@@ -25,7 +25,7 @@ export async function verifiedOwner(req:Request):Promise<string>{
   const header=decode(parts[0]);const payload=decode(parts[1]);
   if(header.alg!=='RS256'||typeof header.kid!=='string')throw new AppError('Invalid owner session.',401);
   const now=Math.floor(Date.now()/1000);
-  if(payload.iss!==`https://${team}`||!Array.isArray(payload.aud)||!payload.aud.includes(aud)||
+  if(payload.iss!==`https://${team}`||!Array.isArray(payload.aud)||!audiences.some(aud=>payload.aud.includes(aud))||
     typeof payload.exp!=='number'||payload.exp<=now||typeof payload.nbf==='number'&&payload.nbf>now||
     typeof payload.iat==='number'&&payload.iat>now+60||typeof payload.email!=='string'||payload.email.toLowerCase()!==owner)
     throw new AppError('Owner access is required.',403);
