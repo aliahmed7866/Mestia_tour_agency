@@ -11,12 +11,12 @@
 
 ## Setup
 1. Buy/attach `svanetitour.com` in your own Cloudflare account. Keep the domain off the new Worker until verified.
-2. The owner has created D1 database `svaneti-guidi`, and its ID is configured in `wrangler.jsonc`. The binding remains `DB`. No need to recreate it.
+2. The owner has created D1 database `svaneti-guide`, and its ID is configured in `wrangler.jsonc`. The binding remains `DB`. No need to recreate it.
 3. With Node >=22.13 and pnpm 11, run `pnpm install --frozen-lockfile` from `sites-app`.
 4. Apply the existing SQL schemas **once**, in order:
    ```sh
-   pnpm exec wrangler d1 execute svaneti-guidi --remote --file=drizzle/0000_tricky_sage.sql
-   pnpm exec wrangler d1 execute svaneti-guidi --remote --file=drizzle/0001_equal_stark_industries.sql
+   pnpm exec wrangler d1 execute svaneti-guide --remote --file=drizzle/0000_tricky_sage.sql
+   pnpm exec wrangler d1 execute svaneti-guide --remote --file=drizzle/0001_equal_stark_industries.sql
    ```
    Back up D1 before future migrations. Do not reapply blindly.
 5. In Cloudflare Zero Trust → Access → Applications, create a self-hosted application for the domain, protecting **/admin*** and **/api/admin*** with an allow policy for your specific email. Include `/api/admin/bootstrap` and `/api/admin/export`. Use the same Access application AUD tag. Configure your login method and test on a private preview first.
