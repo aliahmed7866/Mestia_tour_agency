@@ -4,7 +4,7 @@ import AdminApp from './AdminApp';
 type Step='loading'|'setup'|'password'|'code'|'ready';
 export default function OwnerGate(){
  const [step,setStep]=useState<Step>('loading'),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[code,setCode]=useState(''),[challenge,setChallenge]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
- useEffect(()=>{Promise.all([fetch('/api/admin',{credentials:'same-origin',cache:'no-store'}),fetch('/api/owner-auth',{cache:'no-store'})]).then(async ([admin,config])=>{if(admin.ok){setStep('ready');return;}const c=await config.json() as {configured?:boolean};setStep(c.configured?'password':'setup');}).catch(()=>setStep('password'));},[]);
+ useEffect(()=>{Promise.all([fetch('/api/admin',{credentials:'same-origin',cache:'no-store'}),fetch('/api/owner-auth',{cache:'no-store'})]).then(async ([admin,config])=>{const c=await config.json() as {configured?:boolean};if(admin.ok&&c.configured){setStep('ready');return;}setStep(c.configured?'password':'setup');}).catch(()=>setStep('password'));},[]);
  async function submit(action:string){setBusy(true);setError('');try{
   if(action==='setup'&&password!==confirm)throw new Error('Passwords do not match.');
   const response=await fetch('/api/owner-auth',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({action,email,password,challenge,code})});
