@@ -10,7 +10,7 @@
 - Cloudflare Free has 100,000 requests/day and 10 ms CPU per request (as documented October 2026). Server rendering can exceed the CPU limit; measure real routes before committing to Free. Upgrade only if needed.
 
 ## Setup
-1. Buy/attach `svanetitour.com` in your own Cloudflare account. Keep the domain off the new Worker until verified.
+1. Buy/attach `svanetiguide.com` in your own Cloudflare account. Keep the domain off the new Worker until verified.
 2. The owner has created D1 database `svaneti-guide`, and its ID is configured in `wrangler.jsonc`. The binding remains `DB`. No need to recreate it.
 3. With Node >=22.13 and pnpm 11, run `pnpm install --frozen-lockfile` from `sites-app`.
 4. Apply the existing SQL schemas **once**, in order:
@@ -26,12 +26,12 @@
    - `ADMIN_EMAIL`: the single owner email permitted to administer the business.
    Do not commit personal addresses, tokens, account IDs or JWTs. The server verifies Access JWT signature, issuer, audience, expiry and owner email; a spoofed identity header is not accepted on the Cloudflare deployment.
 7. Build and deploy from `sites-app`: `node scripts/deploy-cloudflare.mjs`. If secrets were not already set, deploy first then configure them **before any admin login**. The owner API fails closed without them.
-8. Set `NEXT_PUBLIC_SITE_URL=https://svanetitour.com` for canonical metadata when enabling public launch. Do not enable indexing until real services, policies, domain and SEO are reviewed.
+8. Set `NEXT_PUBLIC_SITE_URL=https://svanetiguide.com` for canonical metadata when enabling public launch. Do not enable indexing until real services, policies, domain and SEO are reviewed.
 9. Verify public requests, quotes, quote acceptance, manual contact/deposit evidence, room/tour resource conflicts, taxi dispatch and cancellation; verify the admin API denies anonymous and forged-header requests.
 10. Export and restore a D1 backup to a separate test database. Confirm live data from any old host is migrated deliberately; there is **no automatic database sync**.
 
 ## Deployment safety
-- Use a staging `workers.dev` address for first verification. The production Worker must not be attached to `svanetitour.com` until Access routes and D1 are verified.
+- Use a staging `workers.dev` address for first verification. The production Worker must not be attached to `svanetiguide.com` until Access routes and D1 are verified.
 - **No deployment has been performed from this change.** It requires the owner's Cloudflare account, D1 ID, Access policy and secrets.
 - The previous Sites authentication uses a trusted hosting header. This Cloudflare target switches to signed Access JWTs and checks the configured owner email.
 - Use Cloudflare's error monitoring and keep owner contact details off public error responses.
