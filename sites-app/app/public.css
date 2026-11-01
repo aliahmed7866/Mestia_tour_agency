@@ -51,3 +51,10 @@
 .mt-trip-unavailable { border-color: #d4b9a3 !important; background: #fbf3ea !important; }
 @media (max-width: 600px) { .mt-availability-tools { margin-inline: 22px; font-size: 11px; } }
 @media (max-width: 370px) { .mt-availability-tools { margin-inline: 18px; } }
+
+/* WhatsApp-first contact: only rendered after the owner configures a real number. */
+.mt-contact-strip{display:flex;justify-content:space-between;align-items:center;gap:14px;padding-top:14px;padding-bottom:14px;border-bottom:1px solid var(--stone);font-size:14px;color:var(--forest)}
+.mt-contact-strip a{display:inline-flex;align-items:center;gap:8px;color:var(--forest-deep);font-weight:700;text-decoration:underline;text-underline-offset:4px;white-space:nowrap}
+.mt-whatsapp-floating{position:fixed;right:18px;bottom:22px;z-index:70;display:flex;align-items:center;gap:9px;border-radius:999px;padding:13px 18px;background:#176c47;color:#fff!important;box-shadow:0 8px 24px #1b30263d;text-decoration:none;font-weight:700;font-size:14px;line-height:1.2}
+.mt-whatsapp-floating:hover{background:#125437}.mt-whatsapp-floating:focus-visible{outline:3px solid var(--rust);outline-offset:4px}
+@media(max-width:680px){.mt-contact-strip{align-items:flex-start;flex-direction:column;gap:5px}.mt-whatsapp-floating{right:12px;bottom:14px;padding:13px 15px}.mt-whatsapp-floating span{font-size:13px}.mt-trip-dock~.mt-whatsapp-floating{bottom:95px}}
