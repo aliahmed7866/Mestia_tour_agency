@@ -40,7 +40,7 @@ function Badge({ children, tone = '' }: { children: React.ReactNode; tone?: stri
 function Field({ label, help, children }: { label: string; help?: string; children: React.ReactNode }) { return <label className="admin-field"><span>{label}</span>{children}{help && <small>{help}</small>}</label>; }
 function Empty({ title, children }: { title: string; children: React.ReactNode }) { return <div className="admin-empty"><Leaf aria-hidden="true" /><h3>{title}</h3><p>{children}</p></div>; }
 
-export default function AdminApp() {
+export default function AdminApp({onSignOut, onSetupPassword}: {onSignOut?: () => Promise<void>; onSetupPassword?: () => void} = {}) {
   const [data, setData] = useState<AdminData | null>(null);
   const [tab, setTab] = useState<Tab>('requests');
   const [working, setBusy] = useState(false);
@@ -93,10 +93,17 @@ export default function AdminApp() {
     catch (error) { setError(error instanceof Error ? error.message : 'Refresh failed.'); }
     finally { operationInFlight.current = false; setBusy(false); setLoading(false); }
   }
+  async function signOut() {
+    if (!onSignOut || operationInFlight.current || working || !mayLeave()) return;
+    operationInFlight.current = true; setBusy(true); setError('');
+    try { await onSignOut(); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Sign-out failed. Please try again.'); }
+    finally { operationInFlight.current = false; setBusy(false); }
+  }
   function changeTab(next: Tab) { if (busy || next === tab || !mayLeave()) return; setTab(next); setNotice(''); setError(''); }
   const pending = data?.requests.filter(request => request.status === 'enquiry').length ?? 0;
   return <div className="admin-shell">
-    <header className="admin-topbar"><Link href="/" className="admin-brand" onClick={event => { if (busy || !mayLeave()) event.preventDefault(); }}><Mountain aria-hidden="true" /><div><strong>{data?.settings.businessName || 'Svaneti Guide'}</strong><span>Owner workspace</span></div></Link><div className="admin-toplinks"><span>{data?.identity ? 'Private owner access' : 'Private pilot'}</span>{data?.initialized && <a className="admin-export" href="/api/admin/export" download><Download size={15} />Export backup</a>}<Link href="/" onClick={event => { if (busy || !mayLeave()) event.preventDefault(); }}>Visit website <ArrowUpRight size={15} /></Link></div></header>
+    <header className="admin-topbar"><Link href="/" className="admin-brand" onClick={event => { if (busy || !mayLeave()) event.preventDefault(); }}><Mountain aria-hidden="true" /><div><strong>{data?.settings.businessName || 'Svaneti Guide'}</strong><span>Owner workspace</span></div></Link><div className="admin-toplinks">{onSignOut && <button type="button" className="admin-export" disabled={working} onClick={() => void signOut()}>Sign out</button>}{onSetupPassword && <button type="button" className="admin-export" disabled={busy} onClick={() => {if (!busy && mayLeave()) onSetupPassword();}}>Set up owner password</button>}<span>{data?.identity ? 'Private owner access' : 'Private pilot'}</span>{data?.initialized && <a className="admin-export" href="/api/admin/export" download><Download size={15} />Export backup</a>}<Link href="/" onClick={event => { if (busy || !mayLeave()) event.preventDefault(); }}>Visit website <ArrowUpRight size={15} /></Link></div></header>
     {data?.initialized && <nav className="admin-nav" aria-label="Owner sections" role="tablist" onKeyDown={event => {
       const sections: Tab[] = ['requests', 'inventory', 'catalogue', 'resources', 'settings', 'help'];
       const index = sections.indexOf(tab);

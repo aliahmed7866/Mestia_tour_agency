@@ -1,7 +1,7 @@
 import {respond,body,sameOrigin} from '../../lib/server';
-import {hasOwnerPassword,setupPassword,startLogin,finishLogin,sessionCookie,clearCookie,logout} from '../../lib/owner-auth';
+import {ownerAuthStatus,setupPassword,startLogin,finishLogin,sessionCookie,clearCookie,logout} from '../../lib/owner-auth';
 import {AppError} from '../../lib/domain';
-export async function GET(){return respond(async()=>({configured:await hasOwnerPassword()}));}
+export async function GET(req:Request){return respond(()=>ownerAuthStatus(req));}
 export async function POST(req:Request){return respond(async()=>{
   sameOrigin(req);
   const data=await body(req);

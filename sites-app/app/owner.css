@@ -1,0 +1,20 @@
+.owner-page { min-height: 100svh; display: grid; place-items: center; padding: 28px 18px; background: #f5f1e8; color: #233b30; }
+.owner-card { width: 100%; max-width: 440px; padding: clamp(24px, 6vw, 40px); border: 1px solid #dedfd3; border-radius: 22px; background: #fffdf8; box-shadow: 0 16px 48px #1e34250d; }
+.owner-brand { display: flex; gap: 10px; align-items: center; font-size: 23px; font-weight: 700; color: inherit; text-decoration: none; }
+.owner-eyebrow { display: flex; align-items: center; gap: 6px; margin: 24px 0 10px; color: #526556; font-size: 13px; }
+.owner-card h1 { font-size: 29px; line-height: 1.2; margin: 0 0 22px; }
+.owner-card p { line-height: 1.6; }
+.owner-card form, .owner-card label { display: grid; gap: 10px; }
+.owner-card form { gap: 18px; }
+.owner-card label { font-size: 14px; font-weight: 600; }
+.owner-card input { width: 100%; min-width: 0; padding: 13px; border: 1px solid #9daea2; border-radius: 9px; background: white; color: #233b30; font: inherit; font-size: 16px; }
+.owner-code { letter-spacing: .35em; }
+.owner-card button { min-height: 46px; cursor: pointer; font: inherit; }
+.owner-primary { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border: 0; border-radius: 9px; padding: 13px; background: #244d39; color: white; font-weight: 600; }
+.owner-card button:disabled { opacity: .65; cursor: wait; }
+.owner-link { background: none; border: 0; text-decoration: underline; color: #244d39; }
+.owner-card :is(input, button, a):focus-visible { outline: 3px solid #b36b3a; outline-offset: 3px; }
+.owner-error { padding: 12px; border-radius: 8px; color: #892d25; background: #fff0ec; }
+.owner-card footer { display: grid; gap: 18px; margin-top: 28px; font-size: 12px; color: #526556; }
+.owner-card footer a { display: flex; align-items: center; gap: 7px; width: fit-content; color: inherit; min-height: 44px; }
+.owner-notice { padding: 16px 24px; background: #edf4e8; color: #244d39; margin: 0; }
