@@ -45,5 +45,5 @@ Keep the existing hosted pilot unchanged. If a Cloudflare deployment fails, disa
 - Production hostname: `svanetiguide.com`
 - Owner allow-policy email: `svanetiguide@gmail.com`
 - Access application AUD tag: `f6f2cbcfb75d4f7d62e38a15ef9217f289eca7715ace28d680cb1b60567ecf10`
-- Zero Trust team domain: **still required** (`*.cloudflareaccess.com`).
+- Zero Trust team domain: `autumn-unit-071c.cloudflareaccess.com`.
 - These values identify an Access application; they are not login credentials. Configure `ADMIN_EMAIL` and `ACCESS_AUD` as Worker environment settings during deployment; keep JWTs, API tokens and account credentials private.
