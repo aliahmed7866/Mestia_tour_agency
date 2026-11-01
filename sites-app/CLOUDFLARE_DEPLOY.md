@@ -40,3 +40,10 @@
 
 ## Rollback
 Keep the existing hosted pilot unchanged. If a Cloudflare deployment fails, disable its route and revert to the previous known-good version. Database writes made to the new D1 instance do not automatically appear in the old pilot.
+
+## Confirmed Access configuration (2026-11-01)
+- Production hostname: `svanetiguide.com`
+- Owner allow-policy email: `svanetiguide@gmail.com`
+- Access application AUD tag: `f6f2cbcfb75d4f7d62e38a15ef9217f289eca7715ace28d680cb1b60567ecf10`
+- Zero Trust team domain: **still required** (`*.cloudflareaccess.com`).
+- These values identify an Access application; they are not login credentials. Configure `ADMIN_EMAIL` and `ACCESS_AUD` as Worker environment settings during deployment; keep JWTs, API tokens and account credentials private.
