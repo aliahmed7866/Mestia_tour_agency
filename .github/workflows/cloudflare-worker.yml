@@ -1,6 +1,8 @@
 name: Svaneti Guide - Cloudflare Worker
 
 on:
+  push:
+    branches: [deploy/password-runtime-20261102]
   workflow_dispatch:
     inputs:
       operation:
@@ -62,13 +64,13 @@ jobs:
           pnpm exec wrangler d1 execute svaneti-guide --remote --config wrangler.jsonc --file drizzle/0000_tricky_sage.sql
           pnpm exec wrangler d1 execute svaneti-guide --remote --config wrangler.jsonc --file drizzle/0001_equal_stark_industries.sql
       - name: Validate application and Worker password hashing
-        if: ${{ inputs.operation == 'deploy-staging' }}
+        if: ${{ github.event_name == 'push' || inputs.operation == 'deploy-staging' }}
         run: |
           pnpm exec tsc --noEmit
           node --test tests/*.test.mjs
       - name: Build standalone Worker
-        if: ${{ inputs.operation == 'deploy-staging' }}
+        if: ${{ github.event_name == 'push' || inputs.operation == 'deploy-staging' }}
         run: pnpm exec vite build --config vite.cloudflare.config.ts
       - name: Deploy to workers.dev staging address
-        if: ${{ inputs.operation == 'deploy-staging' }}
+        if: ${{ github.event_name == 'push' || inputs.operation == 'deploy-staging' }}
         run: pnpm exec wrangler deploy --config dist/server/wrangler.json
