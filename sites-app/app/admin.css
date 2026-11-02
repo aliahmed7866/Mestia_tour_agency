@@ -228,3 +228,17 @@
 .admin-example-guide p,.admin-example-guide small{font-size:12px;line-height:1.5;margin:0}
 .admin-example-guides>.admin-smalltext{grid-column:1/-1;margin:0}
 @media(max-width:760px){.admin-resource-demo{align-items:flex-start;flex-direction:column}.admin-example-guides{grid-template-columns:1fr}}
+
+/* Keep daily navigation visible, including every section on a phone. */
+.admin-toplinks .admin-visit{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid var(--adm-line);border-radius:10px;background:#fffefa;text-decoration:none;font-size:13px;font-weight:600}
+.admin-panel{box-shadow:0 4px 18px #263d3205}
+.admin-listitem{border-left:3px solid transparent}.admin-listitem.active{border-left-color:var(--adm-forest)}
+.admin-filters{gap:6px;padding:12px;display:flex;flex-wrap:wrap}.admin-filter{min-height:44px;border-radius:8px}
+@media(max-width:620px){
+ .admin-topbar{padding:16px 14px}.admin-toplinks{width:100%;justify-content:flex-start;gap:8px}.admin-toplinks .admin-visit{margin-left:auto;font-size:12px}
+ .admin-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible;padding:8px 12px;gap:5px;background:#faf9f4}
+ .admin-nav button{flex-direction:row;justify-content:center;gap:7px;padding:11px 5px;font-size:12px;border-radius:9px;min-width:0;min-height:48px}
+ .admin-nav button svg{width:17px;height:17px;flex-shrink:0}.admin-nav button[aria-selected="true"]{background:#e6ebdf}
+ .admin-nav button::after{display:none}.admin-count{position:static;font-size:10px;min-width:17px;height:17px;padding:1px 4px}
+ .admin-heading p{font-size:14px;line-height:1.6}.admin-main{padding-top:22px}.admin-listitem{padding:18px 15px}.admin-filter{flex:1;font-size:12px}
+}
