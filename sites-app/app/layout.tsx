@@ -1,6 +1,5 @@
 import type {Metadata} from 'next';
-// Keep the private pilot out of search results until public launch and domain verification.
-// When the public domain and policies are ready, set NEXT_PUBLIC_SITE_URL and explicitly review indexing.
+// Private routes remain noindex by default. The public homepage opts into indexing.
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 const origin = siteUrl && /^https:\/\/[^/]+$/.test(siteUrl) ? siteUrl : undefined;
 export const metadata:Metadata={
