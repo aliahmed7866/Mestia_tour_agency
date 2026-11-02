@@ -62,10 +62,10 @@ async function login(w) {const id = await challenge(); return auth.finishLogin(r
 
 test('legacy Access and Sites status do not require native tables or secrets', async t => {
   world(t, 'access', false); delete env.OWNER_AUTH_SECRET;
-  assert.deepEqual(await auth.ownerAuthStatus(request()), {mode: 'access', canSetup: false});
+  assert.deepEqual(await auth.ownerAuthStatus(request()), {mode: 'access', canSetup: false, authenticated: false});
   assert.equal(await auth.ownerIdentity(access()), EMAIL);
   env.OWNER_AUTH_SECRET = 'optional-secret-with-missing-tables-12345';
-  assert.deepEqual(await auth.ownerAuthStatus(request()), {mode: 'access', canSetup: false});
+  assert.deepEqual(await auth.ownerAuthStatus(request()), {mode: 'access', canSetup: false, authenticated: false});
   delete env.DEPLOY_TARGET;
   assert.deepEqual(await auth.ownerAuthStatus(request()), {mode: 'sites', canSetup: false});
 });
@@ -192,4 +192,15 @@ test('pending email challenges cannot transfer to a newly configured owner', asy
   env.ADMIN_EMAIL = 'replacement@example.test';
   await assert.rejects(auth.finishLogin(request(), id, w.code()), error(401));
   assert.equal(w.db.sqlite.prepare('SELECT COUNT(*) n FROM owner_sessions').get().n, 0);
+});
+
+
+test('Access status requires a verified owner and hides optional password setup by default', async t => {
+  world(t, 'access');
+  assert.deepEqual(await auth.ownerAuthStatus(request()), {mode:'access',canSetup:false,authenticated:false});
+  assert.deepEqual(await auth.ownerAuthStatus(access()), {mode:'access',canSetup:false,authenticated:true});
+  assert.equal((await auth.ownerAuthStatus(request({'Cf-Access-Jwt-Assertion':'forged'}))).authenticated, false);
+  env.OWNER_PASSWORD_SETUP='enabled';
+  assert.equal((await auth.ownerAuthStatus(access())).canSetup, true);
+  assert.equal((await auth.ownerAuthStatus(request())).canSetup, false);
 });

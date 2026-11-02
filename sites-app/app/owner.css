@@ -18,3 +18,5 @@
 .owner-card footer { display: grid; gap: 18px; margin-top: 28px; font-size: 12px; color: #526556; }
 .owner-card footer a { display: flex; align-items: center; gap: 7px; width: fit-content; color: inherit; min-height: 44px; }
 .owner-notice { padding: 16px 24px; background: #edf4e8; color: #244d39; margin: 0; }
+
+.owner-card a.owner-primary { text-decoration: none; min-height: 46px; box-sizing: border-box; }

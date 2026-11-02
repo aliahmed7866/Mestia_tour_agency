@@ -5,7 +5,7 @@ import AdminApp from './AdminApp';
 import {ownerRequest, readOwnerStatus, type OwnerAuthStatus} from '../lib/owner-client';
 import '../owner.css';
 
-type Step = 'loading' | 'setup' | 'password' | 'code' | 'ready' | 'unavailable' | 'error';
+type Step = 'loading' | 'access' | 'setup' | 'password' | 'code' | 'ready' | 'unavailable' | 'error';
 export default function OwnerGate() {
   const [step, setStep] = useState<Step>('loading');
   const [status, setStatus] = useState<OwnerAuthStatus | null>(null);
@@ -21,7 +21,7 @@ export default function OwnerGate() {
       const result = await readOwnerStatus(signal);
       if (signal?.aborted) return;
       setStatus(result);
-      setStep(result.mode !== 'native' || result.authenticated ? 'ready' : result.configured ? 'password' : 'unavailable');
+      setStep(result.mode === 'sites' || result.authenticated ? 'ready' : result.mode === 'access' ? 'access' : result.configured ? 'password' : 'unavailable');
     } catch (cause) {
       if (signal?.aborted) return;
       setError(cause instanceof Error ? cause.message : 'Check your connection and try again.'); setStep('error');
@@ -48,11 +48,12 @@ export default function OwnerGate() {
     finally {inFlight.current = false; setBusy(false);}
   }
   async function signOut() {
+    if (status?.mode === 'access') { window.location.assign('/cdn-cgi/access/logout'); return; }
     const data = await ownerRequest({action: 'logout'});
     if (data.ok !== true) throw new Error('Sign-out could not be confirmed. Please try again.');
     setPassword(''); setConfirm(''); setCode(''); setChallenge(''); setError(''); setNotice('You have signed out.'); setStep('password');
   }
-  if (step === 'ready') return <>{notice && <p className="owner-notice" role="status">{notice}</p>}<AdminApp onSignOut={status?.mode === 'native' ? signOut : undefined} onSetupPassword={status?.canSetup ? () => {setError(''); setNotice(''); setStep('setup');} : undefined}/></>;
+  if (step === 'ready') return <>{notice && <p className="owner-notice" role="status">{notice}</p>}<AdminApp onSignOut={status?.mode !== 'sites' ? signOut : undefined} onSetupPassword={status?.canSetup ? () => {setError(''); setNotice(''); setStep('setup');} : undefined}/></>;
   const title = step === 'setup' ? 'Set your owner password' : step === 'code' ? 'Check your email' : 'Welcome back';
   return <main className="owner-page"><section className="owner-card" aria-busy={busy || step === 'loading'}>
     <a className="owner-brand" href="/"><Mountain size={30} aria-hidden="true"/> Svaneti Guide</a>
@@ -60,7 +61,7 @@ export default function OwnerGate() {
     <h1 ref={heading} tabIndex={-1}>{title}</h1>
     {notice && <p role="status">{notice}</p>}
     {error && <p className="owner-error" role="alert">{error}</p>}
-    {step === 'loading' ? <p role="status">Checking your session…</p> : step === 'error' ? <button className="owner-primary" onClick={() => void check()}><RefreshCw size={16}/> Try again</button> : step === 'unavailable' ? <p>Owner sign-in setup is incomplete. Contact the site administrator to finish the login rollout.</p> : <form onSubmit={event => {event.preventDefault(); void submit(step === 'setup' ? 'setup' : step === 'code' ? 'verify' : 'start');}}>
+    {step === 'access' ? <><p>Sign in with your authorised owner account to manage bookings, availability and prices.</p><a className="owner-primary" href="https://svanetiguide.com/admin">Sign in to admin</a><p>Access is limited to the approved owner. There is no public registration.</p></> : step === 'loading' ? <p role="status">Checking your session…</p> : step === 'error' ? <button className="owner-primary" onClick={() => void check()}><RefreshCw size={16}/> Try again</button> : step === 'unavailable' ? <p>Owner sign-in setup is incomplete. Contact the site administrator to finish the login rollout.</p> : <form onSubmit={event => {event.preventDefault(); void submit(step === 'setup' ? 'setup' : step === 'code' ? 'verify' : 'start');}}>
       {step === 'setup' && <p>Your existing owner access stays active. Choose a unique password of 14–128 characters.</p>}
       {step === 'password' && <label>Owner email<input type="email" required autoComplete="username" value={email} disabled={busy} onChange={event => setEmail(event.target.value)}/></label>}
       {step === 'code' && <><p>Enter the six-digit code sent to your owner email. It expires in five minutes.</p><label>Verification code<input className="owner-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={code} disabled={busy} onChange={event => setCode(event.target.value.replace(/\D/g, ''))}/></label></>}

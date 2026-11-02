@@ -22,6 +22,7 @@ export async function ownerRequest(data?: Record<string, unknown>, signal?: Abor
 export async function readOwnerStatus(signal?: AbortSignal): Promise<OwnerAuthStatus> {
   const result = await ownerRequest(undefined, signal);
   if (typeof result.mode !== 'string' || !['sites', 'access', 'native'].includes(result.mode)
+    || (result.mode === 'access' && typeof result.authenticated !== 'boolean')
     || (result.mode === 'native' && (typeof result.configured !== 'boolean' || typeof result.authenticated !== 'boolean'))) {
     throw new Error('Sign-in settings could not be checked. Please try again.');
   }
