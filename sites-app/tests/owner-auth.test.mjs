@@ -204,3 +204,27 @@ test('Access status requires a verified owner and hides optional password setup 
   assert.equal((await auth.ownerAuthStatus(access())).canSetup, true);
   assert.equal((await auth.ownerAuthStatus(request())).canSetup, false);
 });
+
+test('password-only login creates a secure session without sending an email', async t => {
+  const w=world(t); await setup(); env.OWNER_LOGIN_MODE='password';
+  delete env.RESEND_API_KEY; delete env.OWNER_EMAIL_FROM;
+  assert.equal((await auth.ownerAuthStatus(request())).authenticated,false);
+  await assert.rejects(auth.passwordLogin(request(),EMAIL,'wrong-password'),error(401));
+  const response=await route.POST(request({}, {action:'start',email:EMAIL,password:PASSWORD}));
+  assert.equal(response.status,200); assert.deepEqual(await response.json(),{ok:true});
+  const cookie=response.headers.get('set-cookie');
+  assert.match(cookie,/HttpOnly; Secure; SameSite=Strict/);
+  const session=request({cookie:cookie.split(';')[0]});
+  assert.equal((await auth.ownerAuthStatus(session)).authenticated,true);
+  assert.equal(await auth.ownerIdentity(session),EMAIL); assert.equal(w.code(),'');
+  env.OWNER_LOGIN_MODE='native'; await assert.rejects(auth.ownerIdentity(session),error(401));
+  env.OWNER_LOGIN_MODE='password'; await auth.logout(session);
+  await assert.rejects(auth.ownerIdentity(session),error(401));
+});
+
+test('password mode remains opt-in and rejects cross-origin login',async t=>{
+  world(t,'access'); await assert.rejects(auth.passwordLogin(request(),EMAIL,PASSWORD),error(403));
+  env.OWNER_LOGIN_MODE='password';
+  const response=await route.POST(request({origin:'https://untrusted.test'},{action:'start',email:EMAIL,password:PASSWORD}));
+  assert.equal(response.status,403);
+});

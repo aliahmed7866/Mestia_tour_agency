@@ -4,7 +4,7 @@ import {verifiedOwner} from './access-auth';
 
 const bytes=new TextEncoder();
 const cfg=()=>env as unknown as Record<string,string|undefined>;
-export function ownerLoginMode(){return cfg().DEPLOY_TARGET!=='cloudflare'?'sites':cfg().OWNER_LOGIN_MODE==='native'?'native':'access';}
+export function ownerLoginMode(){return cfg().DEPLOY_TARGET!=='cloudflare'?'sites':cfg().OWNER_LOGIN_MODE==='native'?'native':cfg().OWNER_LOGIN_MODE==='password'?'password':'access';}
 const db=()=>{if(!env.DB)throw new AppError('Database unavailable.',503);return env.DB;};
 const hex=(b:Uint8Array)=>Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');
 const random=(n=32)=>hex(crypto.getRandomValues(new Uint8Array(n)));
@@ -29,14 +29,24 @@ export async function setupPassword(req:Request,password:unknown){
   if(!inserted)throw new AppError('Owner password is already configured.',409);
   return {ok:true};
 }
-export async function startLogin(req:Request,email:unknown,password:unknown){
-  if(ownerLoginMode()!=='native')throw new AppError('Email-code sign-in is not enabled yet. Use your existing owner access.',403);
+async function checkPassword(req:Request,email:unknown,password:unknown){
   await limit(req,'password');
+  if(ownerLoginMode()==='password')await throttle(await hmac('password-account:'+ownerEmail()),30,900);
   if(typeof email!=='string'||typeof password!=='string'||password.length>128)throw new AppError('Invalid sign-in details.',401);
   const row=await db().prepare('SELECT email,salt,password_hash FROM owner_credentials WHERE id=1').first<{email:string;salt:string;password_hash:string}>();
   if(!row||!ownerEmail()||row.email!==ownerEmail())throw new AppError('Owner login is not yet configured for this owner.',503);
   const hash=await passwordHash(password,row.salt);
   if(!equal(row.password_hash,hash)||email.trim().toLowerCase()!==row.email)throw new AppError('Invalid sign-in details.',401);
+  return row;
+}
+export async function passwordLogin(req:Request,email:unknown,password:unknown){
+  if(ownerLoginMode()!=='password')throw new AppError('Password sign-in is not enabled.',403);
+  await checkPassword(req,email,password);
+  return createSession();
+}
+export async function startLogin(req:Request,email:unknown,password:unknown){
+  if(ownerLoginMode()!=='native')throw new AppError('Email-code sign-in is not enabled yet. Use your existing owner access.',403);
+  const row=await checkPassword(req,email,password);
   const key=cfg().RESEND_API_KEY,from=cfg().OWNER_EMAIL_FROM;
   if(!key||!from)throw new AppError('Verification email is not configured.',503);
   await throttle(await hmac('email:'+row.email),5,900);
@@ -58,20 +68,24 @@ export async function finishLogin(req:Request,challenge:unknown,code:unknown){
   if(!row||!equal(row.code_hash,await hmac('code:'+ownerEmail()+':'+challenge+':'+code)))throw new AppError('Invalid or expired verification code.',401);
   const deleted=await db().prepare('DELETE FROM owner_codes WHERE id=1 AND challenge=? AND code_hash=?').bind(hashed,row.code_hash).run();
   if(deleted.meta.changes!==1)throw new AppError('Verification code already used.',401);
-  const token=random(),tokenHash=await hmac('session:'+ownerEmail()+':'+token);
+  return createSession();
+}
+async function createSession(){
+  const now=Math.floor(Date.now()/1000);
+  const token=random(),tokenHash=await hmac('session:'+ownerLoginMode()+':'+ownerEmail()+':'+token);
   await db().prepare('INSERT INTO owner_sessions(token_hash,expires_at,created_at) VALUES (?,?,?)').bind(tokenHash,now+8*3600,new Date().toISOString()).run();
   return token;
 }
 export function sessionCookie(token:string){return 'svaneti_owner='+token+'; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=28800';}
 export const clearCookie='svaneti_owner=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0';
 function cookie(req:Request){return req.headers.get('cookie')?.split(';').map(x=>x.trim()).find(x=>x.startsWith('svaneti_owner='))?.slice(14)||'';}
-export async function nativeOwner(req:Request){if(!ownerEmail())throw new AppError('Owner email not configured.',503);const token=cookie(req);if(!/^[a-f0-9]{64}$/.test(token))throw new AppError('Sign in to access the owner panel.',401);const row=await db().prepare('SELECT expires_at FROM owner_sessions WHERE token_hash=?').bind(await hmac('session:'+ownerEmail()+':'+token)).first<{expires_at:number}>();if(!row||row.expires_at<=Math.floor(Date.now()/1000))throw new AppError('Owner session expired. Sign in again.',401);return ownerEmail();}
-export async function logout(req:Request){const token=cookie(req);if(/^[a-f0-9]{64}$/.test(token))await db().prepare('DELETE FROM owner_sessions WHERE token_hash=?').bind(await hmac('session:'+ownerEmail()+':'+token)).run();}
-export async function ownerIdentity(req:Request){return ownerLoginMode()==='native'?nativeOwner(req):verifiedOwner(req);}
+export async function nativeOwner(req:Request){if(!ownerEmail())throw new AppError('Owner email not configured.',503);const token=cookie(req);if(!/^[a-f0-9]{64}$/.test(token))throw new AppError('Sign in to access the owner panel.',401);const row=await db().prepare('SELECT expires_at FROM owner_sessions WHERE token_hash=?').bind(await hmac('session:'+ownerLoginMode()+':'+ownerEmail()+':'+token)).first<{expires_at:number}>();if(!row||row.expires_at<=Math.floor(Date.now()/1000))throw new AppError('Owner session expired. Sign in again.',401);return ownerEmail();}
+export async function logout(req:Request){const token=cookie(req);if(/^[a-f0-9]{64}$/.test(token))await db().prepare('DELETE FROM owner_sessions WHERE token_hash=?').bind(await hmac('session:'+ownerLoginMode()+':'+ownerEmail()+':'+token)).run();}
+export async function ownerIdentity(req:Request){return ['native','password'].includes(ownerLoginMode())?nativeOwner(req):verifiedOwner(req);}
 export async function ownerAuthStatus(req:Request){
   const mode=ownerLoginMode();
   // Legacy Sites/Access access must not depend on optional native-auth tables or secrets.
-  if(mode!=='native'){
+  if(mode!=='native'&&mode!=='password'){
     let authenticated=false;
     if(mode==='access'){
       try{await verifiedOwner(req);authenticated=true;}catch(e){if(!(e instanceof AppError)||![401,403].includes(e.status))throw e;}
