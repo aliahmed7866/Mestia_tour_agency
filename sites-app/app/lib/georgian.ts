@@ -1,5 +1,6 @@
 import type {DisplayLanguage} from "./display-preferences";
 export const georgian: Record<string,string> = {
+  "What’s included": "რა შედის ფასში",
   "Language": "ენა",
   "Currency": "ვალუტა",
   "Skip to content": "შინაარსზე გადასვლა",

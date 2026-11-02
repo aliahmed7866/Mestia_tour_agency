@@ -242,3 +242,4 @@
  .admin-nav button::after{display:none}.admin-count{position:static;font-size:10px;min-width:17px;height:17px;padding:1px 4px}
  .admin-heading p{font-size:14px;line-height:1.6}.admin-main{padding-top:22px}.admin-listitem{padding:18px 15px}.admin-filter{flex:1;font-size:12px}
 }
+.admin-pricing-research{margin:20px 0;padding:20px;background:#eef1e6;border:1px solid #d6ddc9;border-radius:12px}.admin-pricing-research h3{margin:10px 0;font-size:19px}.admin-pricing-research p{font-size:14px;line-height:1.6}.admin-pricing-research .admin-actions{flex-wrap:wrap;margin:16px 0}.admin-pricing-research a{display:inline-flex;align-items:center;gap:6px;min-height:44px}.admin-pricing-research small{display:block;line-height:1.6;color:var(--adm-muted)}
