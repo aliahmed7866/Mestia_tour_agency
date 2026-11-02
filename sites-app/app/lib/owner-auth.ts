@@ -72,11 +72,15 @@ export async function ownerAuthStatus(req:Request){
   const mode=ownerLoginMode();
   // Legacy Sites/Access access must not depend on optional native-auth tables or secrets.
   if(mode!=='native'){
+    let authenticated=false;
+    if(mode==='access'){
+      try{await verifiedOwner(req);authenticated=true;}catch(e){if(!(e instanceof AppError)||![401,403].includes(e.status))throw e;}
+    }
     let canSetup=false;
-    if(mode==='access'&&(cfg().OWNER_AUTH_SECRET?.length||0)>=32){
+    if(mode==='access'&&authenticated&&cfg().OWNER_PASSWORD_SETUP==='enabled'&&(cfg().OWNER_AUTH_SECRET?.length||0)>=32){
       try{canSetup=!(await hasOwnerPassword());}catch{ /* An unapplied native migration must not block Access. */ }
     }
-    return {mode,canSetup};
+    return mode==='access'?{mode,canSetup,authenticated}:{mode,canSetup};
   }
   const configured=await hasOwnerPassword();
   let authenticated=false;

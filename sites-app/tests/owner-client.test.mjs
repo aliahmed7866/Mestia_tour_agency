@@ -4,12 +4,12 @@ import {ownerRequest, readOwnerStatus} from '../app/lib/owner-client.ts';
 
 test('owner status preserves legacy modes and validates native session state', async t => {
   for (const mode of ['sites', 'access']) {
-    t.mock.method(globalThis, 'fetch', async () => Response.json({mode}));
-    assert.deepEqual(await readOwnerStatus(), {mode});
+    t.mock.method(globalThis, 'fetch', async () => Response.json(mode === 'access' ? {mode, authenticated: false} : {mode}));
+    assert.deepEqual(await readOwnerStatus(), mode === 'access' ? {mode, authenticated: false} : {mode});
   }
   t.mock.method(globalThis, 'fetch', async () => Response.json({mode: 'native', configured: true, authenticated: false}));
   assert.equal((await readOwnerStatus()).authenticated, false);
-  for (const body of [{}, {mode: 'native'}, {mode: 'unexpected'}, []]) {
+  for (const body of [{}, {mode: 'access'}, {mode: 'native'}, {mode: 'unexpected'}, []]) {
     t.mock.method(globalThis, 'fetch', async () => Response.json(body));
     await assert.rejects(readOwnerStatus());
   }
