@@ -1,6 +1,9 @@
 name: Svaneti Guide - Cloudflare Worker
 
 on:
+  # One-time release branch; this workflow change is not merged into main.
+  push:
+    branches: [deploy/mobile-20261102]
   workflow_dispatch:
     inputs:
       operation:
@@ -41,7 +44,7 @@ jobs:
           version: 11.25.0
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
       - name: Check Cloudflare credentials are configured
         shell: bash
         run: |
@@ -61,9 +64,14 @@ jobs:
           fi
           pnpm exec wrangler d1 execute svaneti-guide --remote --config wrangler.jsonc --file drizzle/0000_tricky_sage.sql
           pnpm exec wrangler d1 execute svaneti-guide --remote --config wrangler.jsonc --file drizzle/0001_equal_stark_industries.sql
+      - name: Validate exact release source
+        if: ${{ github.event_name == 'push' || inputs.operation == 'deploy-staging' }}
+        run: |
+          node node_modules/typescript/bin/tsc --noEmit
+          node --test tests/*.test.mjs
       - name: Build standalone Worker
-        if: ${{ inputs.operation == 'deploy-staging' }}
+        if: ${{ github.event_name == 'push' || inputs.operation == 'deploy-staging' }}
         run: pnpm exec vite build --config vite.cloudflare.config.ts
       - name: Deploy to workers.dev staging address
-        if: ${{ inputs.operation == 'deploy-staging' }}
+        if: ${{ github.event_name == 'push' || inputs.operation == 'deploy-staging' }}
         run: pnpm exec wrangler deploy --config dist/server/wrangler.json
