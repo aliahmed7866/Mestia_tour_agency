@@ -35,7 +35,7 @@ export default function OwnerGate() {
     try {
       if (action === 'setup' && password !== confirm) throw new Error('Passwords do not match.');
       const data = await ownerRequest(action === 'setup' ? {action, password} : action === 'start' ? {action, email, password} : {action, challenge, code});
-      if (action === 'start') {
+      if (action === 'start' && status?.mode !== 'password') {
         if (typeof data.challenge !== 'string' || !/^[a-f0-9]{48}$/.test(data.challenge)) throw new Error('The sign-in code could not be requested. Please try again.');
         setChallenge(data.challenge); setPassword(''); setCode(''); setStep('code');
       } else {
@@ -67,7 +67,7 @@ export default function OwnerGate() {
       {step === 'code' && <><p>Enter the six-digit code sent to your owner email. It expires in five minutes.</p><label>Verification code<input className="owner-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={code} disabled={busy} onChange={event => setCode(event.target.value.replace(/\D/g, ''))}/></label></>}
       {(step === 'password' || step === 'setup') && <label>{step === 'setup' ? 'Create password' : 'Password'}<input type="password" required minLength={step === 'setup' ? 14 : 1} maxLength={128} autoComplete={step === 'setup' ? 'new-password' : 'current-password'} value={password} disabled={busy} onChange={event => setPassword(event.target.value)}/></label>}
       {step === 'setup' && <label>Confirm password<input type="password" required minLength={14} maxLength={128} autoComplete="new-password" value={confirm} disabled={busy} onChange={event => setConfirm(event.target.value)}/></label>}
-      <button disabled={busy} type="submit" className="owner-primary">{busy ? 'Please wait…' : step === 'setup' ? 'Save owner password' : step === 'code' ? 'Verify and sign in' : 'Continue securely'}</button>
+      <button disabled={busy} type="submit" className="owner-primary">{busy ? 'Please wait…' : step === 'setup' ? 'Save owner password' : step === 'code' ? 'Verify and sign in' : 'Sign in'}</button>
       {step === 'code' && <button disabled={busy} type="button" className="owner-link" onClick={() => {setStep('password'); setChallenge(''); setCode(''); setError('');}}>Use another email or request a new code</button>}
       {step === 'setup' && <button disabled={busy} type="button" className="owner-link" onClick={() => {setPassword(''); setConfirm(''); setError(''); setStep('ready');}}>Back to workspace</button>}
     </form>}

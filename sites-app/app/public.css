@@ -136,3 +136,10 @@
   .mt-trip-dock{gap:8px}.mt-trip-dock .mt-button{padding-inline:10px;font-size:11px}
   .mt-hero-art{height:280px}
 }
+
+.mt-public[lang="ka"] :is(h1,h2,h3,.mt-logo){letter-spacing:normal;line-height:1.3}
+.mt-public[lang="ka"] .mt-eyebrow{letter-spacing:.03em}
+.mt-public[lang="ka"] .mt-button{white-space:normal}
+.mt-public[lang="ka"] .mt-header{flex-wrap:wrap;height:auto;min-height:98px;padding-block:16px}
+.mt-public[lang="ka"] .mt-nav{gap:16px}
+@media(max-width:680px){.mt-public[lang="ka"] .mt-hero h1{font-size:clamp(32px,9vw,48px)}.mt-public[lang="ka"] .mt-progress{flex-wrap:wrap;gap:8px}.mt-public[lang="ka"] .mt-trip-dock .mt-button{max-width:48%}}

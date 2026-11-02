@@ -1,3 +1,17 @@
+# Password-only owner sign-in
+
+The owner selected password-only access on 2 November 2026. Production stays behind Access until the owner chooses a password and configuration is completed.
+
+1. Apply `migrations/0007_owner_auth.sql` to the existing database; do not recreate it.
+2. Configure a random `OWNER_AUTH_SECRET` of at least 32 characters through Worker secrets. Retain the existing value if already configured. Never commit or display it.
+3. Keep Access enabled and set `OWNER_PASSWORD_SETUP=enabled`. The authorised owner opens `/admin`, chooses Set up owner password, and enters a unique password of 14–128 characters. Do not send passwords in chat.
+4. Verify login in a controlled preview with `OWNER_LOGIN_MODE=password`, the same owner email and saved workspace identity. No email provider or security questions are needed.
+5. After login and anonymous API denial are verified, select `OWNER_LOGIN_MODE=password` in production, deploy, and retire the outer Access challenge on the app routes. Never expose these routes while Access mode remains selected. Disable `OWNER_PASSWORD_SETUP` after setup.
+
+Passwords use salted, peppered PBKDF2-SHA256 hashes. Random sessions are stored as HMACs, with Secure/HttpOnly/SameSite cookies, eight-hour expiry and server-side logout. Login is rate limited by IP and by account. Mutations check the request origin. Sessions are bound to the login mode, so password sessions cannot bypass a later MFA requirement. HTTPS protects credentials in transit. Recovery requires verified operator intervention. No system is unhackable.
+
+## Previous optional email-code rollout
+
 # Owner login rollout (do not remove Cloudflare Access prematurely)
 
 This feature is **not enabled merely by merging the pull request**. It requires the existing owner to complete setup and test a real email-code login before changing the Access policy.
