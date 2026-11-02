@@ -1,3 +1,4 @@
+import {deriveOwnerPassword} from './owner-password';
 import {env} from 'cloudflare:workers';
 import {AppError} from './domain';
 import {verifiedOwner} from './access-auth';
@@ -10,7 +11,7 @@ const hex=(b:Uint8Array)=>Array.from(b,x=>x.toString(16).padStart(2,'0')).join('
 const random=(n=32)=>hex(crypto.getRandomValues(new Uint8Array(n)));
 async function sha(value:string){return hex(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes.encode(value))));}
 async function hmac(value:string){const secret=cfg().OWNER_AUTH_SECRET;if(!secret||secret.length<32)throw new AppError('Owner authentication is not configured.',503);const key=await crypto.subtle.importKey('raw',bytes.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);return hex(new Uint8Array(await crypto.subtle.sign('HMAC',key,bytes.encode(value))));}
-async function passwordHash(password:string,salt:string){const pepper=cfg().OWNER_AUTH_SECRET;if(!pepper||pepper.length<32)throw new AppError('Owner authentication is not configured.',503);const key=await crypto.subtle.importKey('raw',bytes.encode(password+'|'+pepper),'PBKDF2',false,['deriveBits']);return hex(new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',salt:bytes.encode(salt),iterations:310000,hash:'SHA-256'},key,256)));}
+async function passwordHash(password:string,salt:string,stored?:string){const pepper=cfg().OWNER_AUTH_SECRET;if(!pepper||pepper.length<32)throw new AppError('Owner authentication is not configured.',503);return deriveOwnerPassword(password,salt,pepper,stored);}
 function equal(a:string,b:string){if(a.length!==b.length)return false;let diff=0;for(let i=0;i<a.length;i++)diff|=a.charCodeAt(i)^b.charCodeAt(i);return diff===0;}
 const ownerEmail=()=>cfg().ADMIN_EMAIL?.trim().toLowerCase()||'';
 function validPassword(p:unknown):asserts p is string{if(typeof p!=='string'||p.length<14||p.length>128)throw new AppError('Use a password of 14–128 characters.');}
@@ -19,8 +20,9 @@ async function limit(req:Request,kind:string){const ip=req.headers.get('cf-conne
 export async function hasOwnerPassword(){const row=await db().prepare('SELECT id FROM owner_credentials WHERE id=1').first();return !!row;}
 export async function setupPassword(req:Request,password:unknown){
   // Setup requires the existing verified Cloudflare Access owner; never an anonymous bootstrap.
-  if(ownerLoginMode()!=='access')throw new AppError('Password setup requires the existing Access owner session.',403);
+  if(ownerLoginMode()!=='access'||cfg().OWNER_PASSWORD_SETUP!=='enabled')throw new AppError('Password setup requires the existing Access owner session.',403);
   const identity=await verifiedOwner(req);validPassword(password);
+  await limit(req,'setup');
   const settings=await db().prepare("SELECT data FROM settings WHERE id='business'").first<{data:string}>();
   if(settings && JSON.parse(settings.data).adminUserId && JSON.parse(settings.data).adminUserId!==identity)throw new AppError('Owner identity does not match the existing workspace.',403);
   const email=ownerEmail();if(!email)throw new AppError('Owner email not configured.',503);
@@ -35,7 +37,7 @@ async function checkPassword(req:Request,email:unknown,password:unknown){
   if(typeof email!=='string'||typeof password!=='string'||password.length>128)throw new AppError('Invalid sign-in details.',401);
   const row=await db().prepare('SELECT email,salt,password_hash FROM owner_credentials WHERE id=1').first<{email:string;salt:string;password_hash:string}>();
   if(!row||!ownerEmail()||row.email!==ownerEmail())throw new AppError('Owner login is not yet configured for this owner.',503);
-  const hash=await passwordHash(password,row.salt);
+  const hash=await passwordHash(password,row.salt,row.password_hash);
   if(!equal(row.password_hash,hash)||email.trim().toLowerCase()!==row.email)throw new AppError('Invalid sign-in details.',401);
   return row;
 }

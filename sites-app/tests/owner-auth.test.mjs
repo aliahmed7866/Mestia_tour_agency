@@ -39,7 +39,7 @@ const error = status => value => value.status === status;
 function world(t, mode = 'native', migrate = true) {
   for (const key of Object.keys(env)) delete env[key];
   Object.assign(env, {DEPLOY_TARGET: 'cloudflare', OWNER_LOGIN_MODE: mode, ADMIN_EMAIL: EMAIL,
-    OWNER_AUTH_SECRET: 'only-a-test-secret-not-for-real-use-12345', RESEND_API_KEY: 'test-key', OWNER_EMAIL_FROM: 'test@example.test',
+    OWNER_PASSWORD_SETUP:'enabled', OWNER_AUTH_SECRET: 'only-a-test-secret-not-for-real-use-12345', RESEND_API_KEY: 'test-key', OWNER_EMAIL_FROM: 'test@example.test',
     ACCESS_TEAM_DOMAIN: 'test.cloudflareaccess.com', ACCESS_AUD: 'test-audience'});
   const db = env.DB = new SQLiteD1();
   if (migrate) db.sqlite.exec(readFileSync(new URL('../migrations/0007_owner_auth.sql', import.meta.url), 'utf8'));
@@ -81,7 +81,7 @@ test('setup requires signed Access owner, matching workspace and a strong unique
   assert.equal((await auth.ownerAuthStatus(access())).canSetup, false);
   const saved = db.sqlite.prepare('SELECT * FROM owner_credentials').get();
   assert.notEqual(saved.password_hash, PASSWORD);
-  assert.equal(saved.password_hash.length, 64);
+  assert.match(saved.password_hash, /^scrypt\$16384\$8\$5\$[a-f0-9]{64}$/);
   await assert.rejects(auth.setupPassword(access(), PASSWORD), error(409));
 });
 
@@ -196,7 +196,7 @@ test('pending email challenges cannot transfer to a newly configured owner', asy
 
 
 test('Access status requires a verified owner and hides optional password setup by default', async t => {
-  world(t, 'access');
+  world(t, 'access'); delete env.OWNER_PASSWORD_SETUP;
   assert.deepEqual(await auth.ownerAuthStatus(request()), {mode:'access',canSetup:false,authenticated:false});
   assert.deepEqual(await auth.ownerAuthStatus(access()), {mode:'access',canSetup:false,authenticated:true});
   assert.equal((await auth.ownerAuthStatus(request({'Cf-Access-Jwt-Assertion':'forged'}))).authenticated, false);
@@ -228,3 +228,5 @@ test('password mode remains opt-in and rejects cross-origin login',async t=>{
   const response=await route.POST(request({origin:'https://untrusted.test'},{action:'start',email:EMAIL,password:PASSWORD}));
   assert.equal(response.status,403);
 });
+
+ test('disabled setup rejects even a verified Access owner',async t=>{world(t,'access');env.OWNER_PASSWORD_SETUP='disabled';await assert.rejects(auth.setupPassword(access(),PASSWORD),error(403));});
