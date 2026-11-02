@@ -169,7 +169,10 @@
   .admin-brand strong { font-size: 16px; }
   .admin-toplinks { gap: 10px; }
   .admin-toplinks a { font-size: 11px; }
-  .admin-toplinks .admin-export { display: none; }
+  .admin-toplinks a.admin-export { display: none; }
+  .admin-topbar { flex-wrap: wrap; gap: 12px; }
+  .admin-toplinks { flex-wrap: wrap; }
+  .admin-toplinks button.admin-export { min-height: 44px; padding: 8px 12px; font: inherit; border: 1px solid var(--adm-line); border-radius: 6px; background: #fffefa; color: var(--adm-forest); }
   .admin-main { padding-left: 14px; padding-right: 14px; }
   .admin-nav { justify-content: space-between; }
   .admin-nav button { flex-direction: column; gap: 5px; padding: 12px 10px; font-size: 11px; flex: 1; }
