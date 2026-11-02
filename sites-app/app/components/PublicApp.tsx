@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, ArrowRight, Check, CheckCircle2, Copy, ChevronDown, ChevronLeft, Clock3, Flame, House, Leaf, MapPin, Mountain, Plus, RefreshCw, ShieldCheck, Sparkles, TentTree, Trash2, Users, X, CarFront, MessageCircle, LoaderCircle } from "lucide-react";
+import { ArrowDown, ArrowRight, Check, CheckCircle2, Copy, Globe2, ChevronDown, ChevronLeft, Clock3, Flame, House, Leaf, MapPin, Mountain, Plus, RefreshCw, ShieldCheck, Sparkles, TentTree, Trash2, Users, X, CarFront, MessageCircle, LoaderCircle } from "lucide-react";
 import type { PublicDeparture, Service, Settings, RequestItem as TripItem, ServiceKind as Kind } from "../lib/types";
 import { refreshSelections } from "../lib/catalogue-selection";
 import {displayCurrencies, displayPrice, readPreferences, type DisplayCurrency, type DisplayLanguage, type ExchangeRates} from '../lib/display-preferences';
@@ -305,7 +305,24 @@ export default function PublicApp() {
     {contactLink && <a className="mt-whatsapp-floating" href={contactLink} target="_blank" rel="noopener noreferrer" aria-label="Ask Svaneti Guide a question on WhatsApp"><MessageCircle size={22}/><span>Chat on WhatsApp</span></a>}
     <header className="mt-header mt-container">
       <a className="mt-logo" href="#" aria-label={`${settings?.businessName || "Svaneti Guide"} home`}><span className="mt-logo-icon"><Mountain size={27} strokeWidth={1.4}/></span><span>{settings?.businessName || "Svaneti Guide"}<small>SVANETI, GEORGIA</small></span></a>
-      <div className="mt-preferences" aria-label="Language and currency preferences"><label className="mt-preference"><span className="mt-sr-only">Website language</span><span aria-hidden="true" className="mt-preference-icon">文</span><select aria-label="Website language" value={language} onChange={event=>setLanguage(event.target.value as DisplayLanguage)}><option value="en">English</option><option value="ka" lang="ka">ქართული · preview</option></select><ChevronDown size={13} aria-hidden="true"/></label><span className="mt-preference-divider" aria-hidden="true"/><label className="mt-preference"><span className="mt-sr-only">Display currency (estimates only; quotes in GEL)</span><select aria-label="Display currency" value={currency} onChange={event=>setCurrency(event.target.value as DisplayCurrency)}>{displayCurrencies.map(c=><option key={c} value={c}>{c}</option>)}</select><ChevronDown size={13} aria-hidden="true"/></label></div><nav lang={language} className="mt-nav" aria-label="Main navigation"><a href="#experiences" lang={language}>{language==="ka"?"ტურები":"Explore"}</a><a href="#stay">{language==="ka"?"სასტუმრო სახლი":"The guesthouse"}</a><a href="#questions">{language==="ka"?"კითხვები":"Good to know"}</a></nav>
+      <div className="mt-preferences" role="group" aria-label="Language and currency preferences">
+        <label className="mt-preference">
+          <Globe2 size={18} strokeWidth={1.5} aria-hidden="true"/>
+          <span className="mt-preference-field"><span className="mt-preference-label">Language</span>
+            <select aria-label="Website language" value={language} onChange={event => setLanguage(event.target.value as DisplayLanguage)}>
+              <option value="en">English</option><option value="ka" lang="ka">ქართული · preview</option>
+            </select>
+          </span><ChevronDown size={14} aria-hidden="true"/>
+        </label>
+        <label className="mt-preference">
+          <span className="mt-preference-field"><span className="mt-preference-label">Currency</span>
+            <select aria-label="Display currency" aria-describedby="currency-explanation" value={currency} onChange={event => setCurrency(event.target.value as DisplayCurrency)}>
+              {displayCurrencies.map(c => <option key={c} value={c}>{c === 'GEL' ? 'GEL ₾' : c === 'USD' ? 'USD $' : c === 'EUR' ? 'EUR €' : c}</option>)}
+            </select>
+          </span><ChevronDown size={14} aria-hidden="true"/>
+        </label>
+        <span id="currency-explanation" className="mt-sr-only">Foreign currencies are estimates. Quotes remain in Georgian lari.</span>
+      </div><nav lang={language} className="mt-nav" aria-label="Main navigation"><a href="#experiences" lang={language}>{language==="ka"?"ტურები":"Explore"}</a><a href="#stay">{language==="ka"?"სასტუმრო სახლი":"The guesthouse"}</a><a href="#questions">{language==="ka"?"კითხვები":"Good to know"}</a></nav>
       {saved ? <a lang={language} className="mt-button mt-button-dark mt-header-cta" href={`/request#${saved.token}`}>{language === "ka" ? "ჩემი მოთხოვნა" : "My request"} <ArrowRight size={16}/></a> : <button lang={language} className="mt-button mt-button-dark mt-header-cta" onClick={beginPlan}>{language === "ka" ? (items.length ? "ჩემი გეგმის ნახვა" : "სერვისების ნახვა") : (items.length ? "Review my trip" : "Explore services")} <ArrowRight size={16}/></button>}
     </header>
 
