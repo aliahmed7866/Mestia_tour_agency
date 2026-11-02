@@ -143,3 +143,24 @@
 .mt-public[lang="ka"] .mt-header{flex-wrap:wrap;height:auto;min-height:98px;padding-block:16px}
 .mt-public[lang="ka"] .mt-nav{gap:16px}
 @media(max-width:680px){.mt-public[lang="ka"] .mt-hero h1{font-size:clamp(32px,9vw,48px)}.mt-public[lang="ka"] .mt-progress{flex-wrap:wrap;gap:8px}.mt-public[lang="ka"] .mt-trip-dock .mt-button{max-width:48%}}
+
+/* Clear category choices and calmer service cards. */
+.mt-catalogue-bar{padding:8px;background:#eeeee3;border:1px solid #dce0d3;border-radius:18px;gap:18px}
+.mt-filters{gap:6px}.mt-public .mt-filters button{min-height:48px;border-radius:12px;padding:12px 20px;font-size:14px}
+.mt-filters button.active{box-shadow:0 3px 9px #263d3218}
+.mt-category-intro{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:28px 0 20px}
+.mt-category-intro h3{font-family:var(--font-serif,Georgia),serif;font-size:28px;color:#263d32;margin:0 0 8px}
+.mt-category-intro p{font-size:14px;line-height:1.6;color:#596650;margin:0}
+.mt-category-intro>span{white-space:nowrap;border:1px solid #dce0d3;border-radius:30px;padding:7px 12px;font-size:12px;color:#596650}
+.mt-service-card{border:1px solid #e0e2d6;border-radius:20px;box-shadow:0 6px 22px #263d3207;overflow:hidden}
+.mt-card-body>p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-height:1.7}
+.mt-card-details{display:inline-flex;align-items:center;gap:8px;min-height:44px;background:none;border:0;padding:0;color:#24463a;font-weight:600;margin:0 0 8px;cursor:pointer}
+.mt-card-bottom{border-top:1px solid #e7e8de;padding-top:18px;gap:14px}
+.mt-catalogue-caption{max-width:760px;line-height:1.7;font-size:13px;align-items:flex-start}
+@media(max-width:600px){
+ .mt-public .mt-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}
+ .mt-public .mt-filters button{padding:10px 6px;font-size:12px;gap:5px}
+ .mt-catalogue-bar{gap:12px;padding:7px;border-radius:15px}.mt-catalogue-note{padding:0 7px 5px}
+ .mt-category-intro{margin:22px 0 16px;gap:10px;align-items:flex-start}.mt-category-intro h3{font-size:25px}.mt-category-intro p{font-size:14px}.mt-category-intro>span{font-size:11px;padding:6px 9px}
+ .mt-card-body>p{font-size:14px}.mt-card-details{font-size:14px}.mt-public .mt-add-button{min-height:46px;font-size:13px}
+}

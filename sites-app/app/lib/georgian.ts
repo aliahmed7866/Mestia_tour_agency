@@ -166,6 +166,21 @@ export const georgian: Record<string,string> = {
   "Loading currency estimates. Prices are shown in GEL.": "იტვირთება ვალუტის კურსი. ფასები ნაჩვენებია ლარში.",
   "Website language": "ვებსაიტის ენა",
   "Display currency": "ფასების ვალუტა",
-  "Close dialog": "ფანჯრის დახურვა"
+  "Close dialog": "ფანჯრის დახურვა",
+  "Make your time in Svaneti your own.": "დაგეგმეთ თქვენი დრო სვანეთში.",
+  "Choose a tour, a stay or a transfer.": "აირჩიეთ ტური, განთავსება ან ტრანსფერი.",
+  "Add your favourites to one simple request.": "გააერთიანეთ სასურველი სერვისები ერთ მოთხოვნაში.",
+  "Tours & adventures": "ტურები და თავგადასავლები",
+  "A welcoming stay": "მყუდრო განთავსება",
+  "Taxis & transfers": "ტაქსი და ტრანსფერი",
+  "Choose a mountain day, then tell us when you’d like to go.": "აირჩიეთ ტური და მოგვწერეთ სასურველი თარიღი.",
+  "Find your mountain base. We’ll check your dates before confirming.": "შეარჩიეთ განთავსება მთებში. დადასტურებამდე შევამოწმებთ თავისუფალ თარიღებს.",
+  "Tell us your pickup and destination. We’ll arrange the details with you.": "მოგვწერეთ საიდან და სად გსურთ გამგზავრება. დეტალებს თქვენთან შევათანხმებთ.",
+  "option": "ვარიანტი",
+  "options": "ვარიანტი",
+  "Show every pace": "ყველა სირთულის ტურის ნახვა",
+  "No tours match this pace. Try another pace.": "ამ სირთულის ტური ვერ მოიძებნა. აირჩიეთ სხვა სირთულე.",
+  "View details": "დეტალების ნახვა",
+  "Your request is free to send. Your booking is confirmed only after availability, price and terms are agreed.": "მოთხოვნის გაგზავნა უფასოა. ჯავშანი დადასტურდება მხოლოდ ხელმისაწვდომობის შემოწმებისა და ფასისა და პირობების შეთანხმების შემდეგ."
 };
 export function translate(text:string, language:DisplayLanguage){return language === "ka" ? georgian[text] ?? text : text;}
