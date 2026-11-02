@@ -64,17 +64,18 @@
 .mt-offer-strip{margin-top:12px;padding:14px 18px;background:#e7ebdf;border:1px solid #cad5c5;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;color:var(--forest-deep)}
 .mt-offer-strip strong{font-weight:800}.mt-offer-strip small{display:block;color:var(--muted)}
 
-/* Compact, native, keyboard-accessible locale controls matching the forest/cream header. */
-.mt-preferences{display:flex;align-items:center;gap:3px;padding:5px 8px;border:1px solid #d8ded3;border-radius:999px;background:#fffdf8;flex-shrink:0;box-shadow:0 2px 9px #263d320a}
-.mt-preference{display:flex;align-items:center;gap:5px;min-height:32px;padding:0 5px;color:var(--forest);position:relative}
-.mt-preference-icon{font-size:14px;line-height:1;color:#667b61;font-weight:700}
-.mt-preference select{appearance:none;-webkit-appearance:none;background:transparent;border:0;outline-offset:4px;color:inherit;font-size:12px;font-weight:700;letter-spacing:.01em;padding:6px 0;cursor:pointer;max-width:100px}
-.mt-preference svg{pointer-events:none;color:#708174}
-.mt-preference-divider{height:20px;width:1px;background:#d8ded3}
-.mt-preference:focus-within{outline:2px solid #5c775f;outline-offset:1px;border-radius:6px}
-.mt-preference select:focus{outline:none}
-@media(max-width:900px){.mt-preferences{order:2}.mt-preference select{max-width:82px}.mt-preference{gap:3px}}
-@media(max-width:480px){.mt-preferences{padding:3px 5px;gap:1px}.mt-preference{padding:0 3px}.mt-preference select{font-size:11px;max-width:70px}.mt-preference-icon{display:none}}
+/* Locale controls share the site's quiet borders and warm paper surfaces. */
+.mt-preferences{display:flex;align-items:stretch;gap:0;border:1px solid var(--stone);border-radius:8px;background:var(--paper);flex-shrink:0}
+.mt-preference{display:flex;align-items:center;gap:10px;position:relative;padding:8px 12px;min-height:56px;color:var(--forest);min-width:0}
+.mt-preference+.mt-preference{border-left:1px solid var(--stone)}
+.mt-preference-field{display:flex;flex-direction:column;min-width:0}
+.mt-preference-label{font-size:10px;line-height:1.3;color:#66735b;letter-spacing:.05em}
+.mt-public .mt-preference select{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--forest);font-size:14px;font-weight:500;line-height:1.5;cursor:pointer;padding:2px 0;max-width:150px;min-width:64px;outline:none}
+.mt-preference svg{flex-shrink:0;pointer-events:none;color:#667b61}
+.mt-preference:focus-within{outline:2px solid #5c775f;outline-offset:3px;border-radius:6px}
+.mt-preference:hover{background:#eef0e5;border-radius:7px}
+/* Expand the native selector hit area across its labelled field. */
+.mt-preference select::selection{background:#e7ebdc}
 
 .mt-preference-status { display: grid; gap: 6px; padding-top: 12px; padding-bottom: 12px; font-size: 13px; line-height: 1.6; color: #405845; background: #f0f3e9; border-radius: 10px; }
 .mt-preference-status button { margin-left: 10px; min-height: 44px; }
@@ -86,9 +87,52 @@
   .mt-header .mt-logo { min-width: 0; }
   .mt-header .mt-logo-icon { flex-shrink: 0; }
   .mt-header .mt-header-cta { grid-column: 2; grid-row: 1; font-size: 12px; }
-  .mt-header .mt-preferences { grid-column: 1 / -1; grid-row: 2; justify-self: start; order: initial; }
-  .mt-header .mt-preference select { font-size: 16px; max-width: 160px; min-height: 44px; }
+  .mt-header .mt-preferences { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; order: initial; }
+  .mt-header .mt-preference select { font-size: 16px; max-width: none; width: 100%; min-height: 28px; }
 }
 
 /* Accessible labels stay available to assistive technology without widening controls. */
 .mt-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* Mobile rhythm, readable details, and comfortable thumb targets. */
+@media(max-width:680px){
+  .mt-container{width:calc(100% - 36px)}
+  .mt-header{gap:16px 12px;padding-block:18px}
+  .mt-header .mt-logo{font-size:22px;gap:8px}
+  .mt-header .mt-header-cta{white-space:normal;max-width:138px;min-height:44px;line-height:1.4;padding:10px 12px}
+  .mt-header .mt-header-cta svg{flex-shrink:0}
+  .mt-preferences{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);background:transparent;border-color:#d9ddce}
+  .mt-preference{padding:10px 14px;min-height:64px;gap:10px}
+  .mt-preference-field{flex:1}
+  .mt-preference-label{font-size:11px}
+  .mt-preference-status{padding:12px 14px;font-size:12px;border:1px solid #dce3d2}
+  .mt-hero{margin-top:20px;gap:28px}
+  .mt-hero h1{font-size:clamp(40px,11vw,58px);overflow-wrap:anywhere}
+  .mt-hero-description{max-width:40ch;line-height:1.8}
+  .mt-hero-art{height:320px}
+  .mt-hero .mt-button{min-height:48px;font-size:14px;white-space:normal}
+  .mt-choice{min-height:78px}
+  .mt-catalogue-bar{align-items:stretch;gap:14px;flex-wrap:wrap}
+  .mt-filters{gap:8px;width:100%}
+  .mt-public .mt-filters button{flex:1;justify-content:center;min-height:46px;font-size:12px;padding:9px 10px}
+  .mt-difficulty{font-size:12px}.mt-difficulty select{min-height:44px;font-size:16px}
+  .mt-card-meta{font-size:12px;flex-wrap:wrap;gap:8px}
+  .mt-public .mt-add-button{min-height:46px;font-size:13px;padding:10px 12px}
+  .mt-price strong{font-size:17px}.mt-price>span{font-size:11px}
+  .mt-public .mt-icon-button{min-width:44px;min-height:44px}
+  .mt-public .mt-service-picker button{min-height:44px}
+  .mt-trip-dock .mt-button{min-height:46px;font-size:12px}
+  .mt-trip-dock>div{min-width:0}.mt-trip-dock>div>span{font-size:11px}
+  .mt-trip-dock strong{font-size:16px}
+  .mt-footer{padding-bottom:calc(130px + env(safe-area-inset-bottom))}
+  .mt-footer-contact{font-size:12px}.mt-footer-contact a,.mt-footer-bottom a,.mt-footer-bottom button{min-height:44px;display:inline-flex;align-items:center}
+  .mt-whatsapp-floating{bottom:calc(14px + env(safe-area-inset-bottom))}
+  .mt-field input,.mt-field select,.mt-field textarea{min-width:0;width:100%}
+  .mt-detail-bottom{flex-wrap:wrap}.mt-detail-bottom .mt-button{flex:1;white-space:normal}
+}
+@media(max-width:370px){
+  .mt-header .mt-logo{font-size:19px}.mt-header .mt-header-cta{max-width:115px;font-size:11px}
+  .mt-preference{padding:10px;gap:6px}.mt-preference>svg:first-child{width:16px}
+  .mt-trip-dock{gap:8px}.mt-trip-dock .mt-button{padding-inline:10px;font-size:11px}
+  .mt-hero-art{height:280px}
+}
