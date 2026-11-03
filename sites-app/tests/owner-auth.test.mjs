@@ -230,3 +230,20 @@ test('password mode remains opt-in and rejects cross-origin login',async t=>{
 });
 
  test('disabled setup rejects even a verified Access owner',async t=>{world(t,'access');env.OWNER_PASSWORD_SETUP='disabled';await assert.rejects(auth.setupPassword(access(),PASSWORD),error(403));});
+
+test('photo uploads require owner and origin, reject invalid data, persist and deduplicate JPEGs',async t=>{
+ const {db}=world(t,'access');db.sqlite.exec(readFileSync(new URL('../migrations/0008_service_photos.sql',import.meta.url),'utf8'));
+ const photos=await import('../app/api/admin/photos/route.ts');const media=await import('../app/api/media/[id]/route.ts');const {jpeg}=await import('./photo-fixture.mjs');
+ const upload=(data=jpeg,headers={})=>new Request(ORIGIN+'/api/admin/photos',{method:'POST',headers:{origin:ORIGIN,'content-type':'image/jpeg','Cf-Access-Jwt-Assertion':jwt,...headers},body:data});
+ assert.equal((await photos.POST(upload(jpeg,{'Cf-Access-Jwt-Assertion':'forged'}))).status,401);
+ assert.equal((await photos.POST(upload(jpeg,{origin:'https://other.test'}))).status,403);
+ assert.equal((await photos.POST(upload(new TextEncoder().encode('<svg/>')))).status,400);
+ assert.equal((await photos.POST(upload(new Uint8Array(384*1024+1)))).status,413);
+ const response=await photos.POST(upload());assert.equal(response.status,200);const {url}=await response.json();assert.match(url,/^\/api\/media\/[a-f0-9]{64}$/);
+ assert.equal((await photos.POST(upload())).status,200);assert.equal(db.sqlite.prepare('SELECT COUNT(*) n FROM service_photos').get().n,1);
+ const service=(await server.getServices())[0];
+ await server.mutateAdmin(access(),{action:'saveService',service:{...service,photos:[{url,alt:'Mestia valley'}],image:url}});
+ const catalogue=await (await import('../app/api/catalogue/route.ts')).GET();
+ const saved=(await catalogue.json()).services.find(item=>item.id===service.id);assert.deepEqual(saved.photos,[{url,alt:'Mestia valley'}]);
+ const image=await media.GET(new Request(ORIGIN+url),{params:Promise.resolve({id:url.split('/').at(-1)})});assert.equal(image.headers.get('content-type'),'image/jpeg');assert.equal(image.headers.get('x-content-type-options'),'nosniff');assert.deepEqual(new Uint8Array(await image.arrayBuffer()),jpeg);
+});
