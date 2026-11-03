@@ -1,3 +1,4 @@
+import {enrichService} from './catalogue-content';
 import {env} from 'cloudflare:workers';
 import {ownerIdentity} from './owner-auth';
 import {DEFAULT_SETTINGS,PROPOSED_SERVICES} from './defaults';
@@ -11,7 +12,7 @@ const onCloudflare=()=>String((env as unknown as Record<string,unknown>).DEPLOY_
 export function database(){if(!env.DB)throw new AppError('Database unavailable. Please try again later.',503);return env.DB;}
 export async function getSettings():Promise<Settings>{const row=await database().prepare("SELECT data FROM settings WHERE id='business'").first<{data:string}>();const saved=row?JSON.parse(row.data) as Partial<Settings>:{};return {...DEFAULT_SETTINGS,...saved,whatsapp:saved.whatsapp||DEFAULT_SETTINGS.whatsapp,businessName:!saved.businessName||['Mestia Travel','Mestia Tours'].includes(saved.businessName)?'Svaneti Guide':saved.businessName,maxConcurrentTours:await getTourLimit()};}
 async function list<T>(table:'services'|'resources'|'requests'|'blocks'):Promise<T[]>{const rows=await database().prepare(`SELECT data FROM ${table}`).all<{data:string}>();return rows.results.map(row=>JSON.parse(row.data));}
-export async function getServices():Promise<Service[]>{const s=await list<Service>('services');return s.length?s:structuredClone(PROPOSED_SERVICES);}
+export async function getServices():Promise<Service[]>{const s=await list<Service>('services');return (s.length?s:structuredClone(PROPOSED_SERVICES)).map(enrichService);}
 export const getResources=()=>list<Resource>('resources');
 export async function getTravelRequest(id:string){const row=await database().prepare('SELECT data FROM requests WHERE id=?').bind(id).first<{data:string}>();if(!row)throw new AppError('Request not found.',404);return JSON.parse(row.data) as TravelRequest;}
 export async function byToken(token:string){if(!/^[a-f0-9-]{60,80}$/i.test(token))throw new AppError('This request link is invalid.',404);const row=await database().prepare('SELECT data FROM requests WHERE token=?').bind(token).first<{data:string}>();if(!row)throw new AppError('This request link is invalid.',404);const r=JSON.parse(row.data) as TravelRequest;if(Date.parse(r.tokenExpiresAt)<=Date.now())throw new AppError('This link has expired. Contact the operator for a fresh link.',410);return r;}
